@@ -19,9 +19,9 @@ sourcedict = json.load(sourceobj)
 sourceobj.close()
 
 #get reference dictionaries for country, language, association codes
-countryObj = open(os.path.join(relpath, '/static/loccountrycodes.json'))
-langObj = open(os.path.join(relpath,'/static/loclangcodes.json'))
-relObj = open(os.path.join(relpath,'/static/locrelcodes.json'))
+countryObj = open(os.path.join(relpath, 'static/loccountrycodes.json'))
+langObj = open(os.path.join(relpath,'static/loclangcodes.json'))
+relObj = open(os.path.join(relpath,'static/locrelcodes.json'))
 countryCodesDict = json.load(countryObj)
 countryCodesInverted = {countryCodesDict[key]: key for key in countryCodesDict}
 langCodesDict = json.load(langObj)

@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Robbins MS {{ ms.id }} - {{ ms.titles.filter_by(title_type='main').first().title_text }}</h3>
+<div class="section">
+
+
+{% if ms.titles.filter(title_type in['uniform', 'varying', 'secundo']) %}
+	<!--<h4>Variations of Title:</h4>-->
+	{% if ms.titles.filter_by(title_type='uniform').first() %}
+	<p><b>Uniform Title:</b> {{ ms.titles.filter_by(title_type='uniform').first().title_text }}</p>
+	<br>
+	{% endif %}
+	
+	{% if ms.titles.filter_by(title_type='secundo').first() %}
+	<p><b>Secundo folio:</b> {{ ms.titles.filter_by(title_type='secundo').first().title_text }}</p>
+	<br>
+	{% endif %}
+	
+
+	{% if ms.titles.filter_by(title_type='varying').count() >0 %}
+	<p><b>Variations of Title:</b></</p>
+		<ul>
+		{% for alt_title in ms.titles.filter_by(title_type='varying') %}
+		<li>{{ alt_title.title_text }}</li>
+
+		{% endfor %}
+		</ul>
+	{% endif %}
+{% endif %}
+
+{% if ms.datetype == 's' %}
+	{% if ms.datecertain == True %}
+  <br>
+	<p><b>Date:</b> {{ ms.date1 }}</p>
+	{% else %}
+  <br>
+	<p><b>Date:</b> ca. {{ ms.date1 }}</p>
+
+	{% endif %}
+
+{% elif ms.datetype in ['k','q','i'] %}
+<br>
+<p><b>Dates:</b> between {{ms.date1}} and {{ms.date2}}</p>
+
+{% else %}
+<br>
+<p><b>Dates:</b> {{ms.date1}}-{{ms.date2}}</p>
+
+{% endif %}
+<br>
+<p><b>Language: </b><a href="{{url_for('ms_by_language', focuslanguage=ms.language)}}">{{ ms.language }}</a></p>
+
+{% if ms.publisher %}
+<p>Published by: {{ ms.publisher }}</p>
+{% endif %}
+
+{% if ms.places|length() > 1 %}
+<br>
+<p><b>Places of Origin:</b><p>
+{% else %}
+<br>
+<p><b>Place of Origin:</b><p>
+{% endif %}
+<ul>
+{% for place in ms.places %}
+<li><a href="{{ 'place' + (place.id|string) }}">{{ place.place_name }}</a></li>
+{% endfor %}
+</ul>
+
+{% if people|length > 0 %}
+<br>
+<p><b>Associated People:</b></p>
+<ul>
+{% for person_rel in people %}
+<li><a href="{{ 'person' +(person_rel|string) }}">{{ people[person_rel]['name'] }}</a> – {{ people[person_rel]['roles'] }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if ms.orgs.count() >0 %}
+<br>
+<p><b>Associated Organizations:</b></p>
+<ul>
+{% for relorg in ms.orgs %}
+<li><a href="org{{relorg.org.id}}">{{ relorg.org.name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+
+{% if ms.watermarks|length() > 0 %}
+<br>
+<p><b>Watermarks:</b><p>
+{% for wm in ms.watermarks %}
+<a href="{{ 'watermark' + (wm.id|string) }}">Briquet {{ wm.id }} "{{ wm.name }}"</a>
+{% endfor %}
+{% endif %}
+<br>
+{% if ms.summary %}
+<br>
+<p><b>Summary</b></p>
+<p>{{ ms.summary }}</p>
+{% endif %}
+
+{% if ms.origin %}
+<br>
+<p><b>Origin</b></p>
+<p>{{ ms.origin }}</p>
+{% endif %}
+
+{% if ms.ownership_history %}
+<br>
+<p><b>Ownership History</b></p>
+<p>{{ ms.ownership_history }}</p>
+{% endif %}
+<br>
+
+
+
+
+
+
+{% if ms.ms_format %}
+<p><b>Format: </b><a href="{{url_for('ms_by_format', focusformat=ms.ms_format)}}">{{ ms.ms_format }}</a></p>
+{% endif %}
+
+<p><b>Number of Volumes:</b> {{ ms.num_volumes }}</p>
+
+{% for volume in ms.volumes %}
+{% if ms.volumes.all()|length() >1 %}
+<h4>Volume {{ volume.numeration }}</h4>
+{% endif %}
+{% if volume.support %}
+<p><b>Material: </b><a href="{{url_for('ms_by_support', focussupport=volume.support)}}">{{ volume.support }}</a></p>
+{% endif %}
+
+{% if volume.extent %}
+<p><b>Extent:</b> {{ volume.extent }} {{volume.extent_unit }}</p>
+{% endif %}
+
+{%if volume.leaf_height or volume.written_height or volume.bound_height %}
+<p><b>Dimensions:</b></p>
+<ul>
+{% if volume.leaf_height and volume.leaf_width %}
+<li>Support dimensions: {{volume.leaf_height}} x {{ volume.leaf_width }} {{volume.size_unit}}</li>
+{% endif %}
+
+{% if volume.written_height and volume.written_width %}
+<li>Written area: {{volume.written_height}} x {{volume.written_width}} {{volume.size_unit}}</li>
+{% endif %}
+
+{% if volume.bound_height and volume.bound_width %}
+<li>Bound to {{volume.bound_height}} x {{volume.bound_width}} {{volume.size_unit}}</li>
+{% endif %}
+</ul>
+{% endif %}
+
+{% if volume.scripts|length ==1 %}
+<p><b>Script: </b><a href="{{url_for('ms_by_script', idno=volume.scripts[0].id)}}">{{volume.scripts[0].name}}</a></p>
+{% elif volume.scripts|length >1 %}
+<p><b>Scripts:</b></p>
+<ul>
+{% for script in volume.scripts %}
+<li><a href="{{url_for('ms_by_script', idno= script.id)}}">{{ script.name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if volume.ruling|length ==1 %}
+<p><b>Ruling: </b> <a href="{{url_for('ms_by_ruling', idno=volume.ruling[0].id)}}">{{ volume.ruling[0].name }}</a></p>
+{% elif volume.ruling|length >1 %}
+<p><b>Ruling:</b></p>
+<ul>
+{% for rule in volume.ruling %}
+<li><a href="{{url_for('ms_by_ruling', idno=rule.id)}}">{{ rule.name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if volume.quire_register %}
+<p><b>Register of Quires:</b> {{ volume.quire_register }}</p>
+{% endif %}
+
+{% if volume.phys_arrangement %}
+<p><b>Arrangement:</b> {{ volume.phys_arrangement }}</p>
+<br>
+{% endif %}
+
+{% endfor %}
+
+{% if ms.binding %}
+<p><b>Binding:</b> {{ ms.binding }}</p>
+<br>
+{% endif %}
+
+{% if ms.decoration %}
+<p><b>Decoration:</b> {{ ms.decoration }}</p>
+<br>
+{% endif %}
+
+{% if ms.ds_url %}
+<p><a href="{{ms.ds_url}}">View images</a> at Digital Scriptorium</p>
+{% endif %}
+</div>
+
+
+{% if ms.contents.first() %}
+{% for volume in ms.volumes %}
+{% if ms.volumes.all()|length == 1 %}
+<h4>Contents</h4>
+{% elif ms.volumes.all()|length > 1%}
+<h4>Contents of Volume {{ volume.numeration }}</h4>
+{% endif %}
+<table class="contentstable">
+{% for textitem in volume.contents %}
+<tr>
+	<td>{{ textitem.fol_start_num }}{{ textitem.fol_start_side }} 
+	{% if textitem.fol_end_num != None %}
+	- {{ textitem.fol_end_num }}
+	{% endif %}
+	{% if textitem.fol_end_side != None %}
+	{{ textitem.fol_end_side }}
+	{% endif %}
+	</td>
+	<td>{{ textitem.text }}</td>
+</tr>
+
+{% endfor %}
+</table>
+{% endfor %}
+{% endif %}
+<!--canvases for d3 visualizations-->
+<div class="section" id="relationvis">
+</div>
+<script src="static/d3.min.js"></script>
+<script>
+
+var width = 490,
+    height = 250;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .charge(-120)
+    .linkDistance(30)
+    .size([width, height]);
+
+var svg = d3.select("#relationvis").append("svg")
+    .attr("id", "graphcanvas")
+    .attr("width", width)
+    .attr("height", height);
+
+var msGraph = {{ graphsend|safe }}
+/*for (element in msGraph) {
+  for (point in msGraph[element]) {
+    console.log(msGraph[element][point])
+  }
+
+} */
+
+/*d3.json(msGraph, function(error, graph) {
+  if (error) throw error;
+  console.log(msGraph);
+*/
+graph = msGraph
+console.log(msGraph);
+  force
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .linkStrength(.01) //function(links) { return (links.value/20)};);
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(graph.links)
+    .enter().append("line")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 5)
+      .style("fill", function(d) { return color(d.group); })
+      .call(force.drag)
+      .attr("name", function(d) {return d.name })
+      .attr("group", function(d) {return d.group })
+      .attr("dbkey", function(d) {return d.dbkey })
+      .attr("onclick", "getNewNodes(this)");
+
+  var texts = svg.selectAll("text.label")
+  	.data(graph.nodes)
+  	.enter().append("text")
+  	.attr("class", "label")
+  	.attr("fill", "black")
+  	.text(function(d) { return d.name; });
+  node.append("text")
+  	.attr("dx", 12)
+  	.attr("dy", ".35em")
+      .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+
+    texts.attr("transform", function(d) {
+        return "translate(" + (d.x +5) + "," + d.y + ")";
+    });
+  });
+//});
+
+</script>
+
+<div class="section" id="textvis">
+</div>
+
+
+
+
+
+</div>
+{% endblock %}

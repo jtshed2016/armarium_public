@@ -1,0 +1,89 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<h3>Edit Robbins MS {{ edit_ms.id }}</h3>
+<div class="content" id="msform">
+<form action="" method="POST" name="select_ms">
+<p>Format</p>
+{{ msform.ms_format }}
+<p>Date 1</p>
+{{ msform.ms_date1 }}
+<p>Date 2</p>
+{{ msform.ms_date2 }}
+<br>
+<p>Date Type</p>
+{{ msform.ms_datetype }}
+<br>
+<p>Language</p>
+{{ msform.ms_language }}
+<br>
+<p>Summary</p>
+{{ msform.ms_summary }}
+<br>
+<p>Ownership History</p>
+{{ msform.ms_ownership }}
+<br>
+<p>Origin</p>
+{{ msform.ms_origin }}
+<br>
+<p>Decoration</p>
+{{ msform.ms_decoration }}
+<br>
+<p>Binding</p>
+{{ msform.ms_binding }}
+<br>
+{{ msform.ms_id }}
+<input type="submit" value="Submit Changes">
+</form>
+
+</div>
+<div class="content">
+{% for volume in edit_ms.volumes %}
+<h4>Volume {{ volume.numeration }} of {{ edit_ms.num_volumes }}</h4>
+<a href="{{ url_for('edit_volume', item_to_edit=volume.id) }}">Edit this volume</a>
+<p><b>Support: </b>{{ volume.support }}<p>
+<p><b>Extent: </b>{{ volume.extent }}</p>
+<p><b>Unit of extent: </b>{{ volume.extent_unit }}</p>
+<p><b>Bound width: </b>{{ volume.bound_width }}</p>
+<p><b>Bound height: </b>{{ volume.bound_height }}</p>
+<p><b>Leaf width: </b>{{ volume.leaf_width }}</p>
+<p><b>Leaf height: </b>{{ volume.leaf_height }}</p>
+<p><b>Written width: </b>{{ volume.written_width }}</p>
+<p><b>Written height: </b>{{ volume.written_height }}</p>
+<p><b>Unit of sizes: </b>{{ volume.size_unit }}</p>
+<p><b>Register of quires: </b>{{ volume.quire_register }}</p>
+<p><b>Physical arrangement: </b>{{ volume.phys_arrangement }}</p>
+<p><b>Scripts</b></p>
+{% for script in volume.scripts %}
+<p>{{ script.name }}<p>
+{% endfor %}
+<p><b>Lines</b></p>
+{% for line in volume.lines %}
+<p>{{ line.id }}</p>
+{% endfor %}
+<p><b>Ruling</b></p>
+{% for ruletype in volume.rulings %}
+{{ ruletype.name }}
+{% endfor %}
+<p><b>Contents</b><p>
+<table>
+{% for textitem in volume.contents %}
+<tr>
+	<td>{{ textitem.fol_start_num }}{{ textitem.fol_start_side }} 
+	{% if textitem.fol_end_num != None %}
+	- {{ textitem.fol_end_num }}
+	{% endif %}
+	{% if textitem.fol_end_side != None %}
+	{{ textitem.fol_end_side }}
+	{% endif %}
+	</td>
+	<td>{{ textitem.text }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
+
+{% endfor %}
+</div>
+
+{% endblock %}

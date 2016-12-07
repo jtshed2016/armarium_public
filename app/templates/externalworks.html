@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Works Citing Robbins Collection Manuscripts</h3>
+<p>Below is a list of books, articles, and other works describing, citing, or based on Robbins manuscripts.</p>
+<div id="contentsdiv">
+<table>
+{% for work in works %}
+<tr><td colspan="3"><b><a href="/exwork{{work.id}}">{{ work.work_title }}</a></b></td></tr>
+	{% for doc in work.work_constituents %}
+		<tr>
+			<td>{{ doc.doc_title }}</td>
+			<td>{{ doc.doc_author }}</td>
+			<td>{{ doc.doc_year }}</td>
+		</tr>
+	{% endfor %}
+
+
+
+{% endfor %}
+</table>
+</div>
+
+{% endblock %}
+
+
+
+

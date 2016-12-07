@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+	<h3>{{ work.work_title }}</h3>
+	<p>{{ work.work_publisher }}, {{ work.work_location}}</p>
+	<div id="contentsdiv">
+	<table>
+		<tr>
+			<th>Author</th>
+			<th>Title</th>
+			<th>Volume</th>
+			<th>Issue</th>
+			<th>Year</th>
+			<th>MSS referenced</th>
+		</tr>
+	{% for doc in work.work_constituents %}
+		<tr>
+			<td>{{ doc.doc_author}}</td>
+			<td>{{ doc.doc_title }}</td>
+			<td>{% if doc.doc_volume != None %}{{ doc.doc_volume }}{% endif %}</td>
+			<td>{% if doc.doc_issue != None %}{{ doc.doc_issue }}{% endif %}</td>
+			<td>{{ doc.doc_year}}</td>
+			<td>{% for ms in doc.mss %}<a href="ms{{ms.id}}">{{ms.id}}</a> {% endfor %}</td>
+		</tr>
+	{% endfor %}
+	</table>
+	</div>
+
+{% endblock %}

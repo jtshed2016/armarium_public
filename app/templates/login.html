@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4>Admin - Log In to Modify Data</h4>
+
+<div class="section">
+	<form method="post" action="">
+		<p>Username:  {{ userform.username }}</p>
+		<p>Password:  {{ userform.userpassword }}</p>
+		{% if errormessage != None %}
+			<p>{{ errormessage }}</p>
+		{% endif %}
+		<input type="submit" value="Log in">
+	</form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	<div id="contentsdiv">
+		<table id="contentstable">
+		<tr>
+			<td>Name</td>
+			<td>Records</td>
+		</tr>
+		{% for record in recs %}
+		<tr>
+			<td><a href="place{{ record.id }}">{{record.place_name}}</a></td>
+			<td>{{ record.mss.count()}}</td>
+		</tr>
+		{% endfor %}
+		</table>
+	</div>
+{% endblock %}
+
+

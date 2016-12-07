@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	<div class="section">
+		<p>This page lists watermarks occurring in Robbins Collection manuscripts, organized according to the categories of Briquet's <em>Les Filigranes</em>.</p>
+
+	<div id="contentsdiv">
+		<table id="contentstable">
+		{% for wmtuple in recs %}
+		<tr>
+			<td><b>{{ wmtuple[0].name }}</b></td>
+		</tr>
+			{% for wminstance in wmtuple[1] %}
+			<tr>
+				<td><a href="watermark{{ wminstance.id }}">{{wminstance.id}}</a></td>
+			</tr>
+			{% endfor %}
+		{% endfor %}
+
+		</table>
+	</div>
+{% endblock %}
+
+

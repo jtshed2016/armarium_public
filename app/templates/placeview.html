@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>{{ location.place_name }}</h3>
+<div class="section">
+
+<div class="mstable">
+  <table>
+    <tr>
+      <th>Manuscript</th>
+      <th>Title</th>
+    </tr>
+  {% for ms in location.mss %}
+    <tr>
+      <td><a href="ms{{ ms.id }}">{{ ms.shelfmark }}</a></td>
+      <td>{{ ms.titles.filter_by(title_type='main').first().title_text }}</td>
+      </tr>
+  {% endfor %}
+  </table>
+</div>
+
+<div class="placemapholder">
+  <div id="map">
+    <script>
+    function initMap() {
+      var map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: {{ location.lat}}, lng: {{location.lon }} },
+        zoom: 6,
+        zoomControl: false,
+        mapTypeControl: false,
+        scaleControl: false,
+        streetViewControl: false
+      });
+
+      var image = '{{ url_for('static', filename='robbins_icon.gif') }}';
+      var msMarker = new google.maps.Marker({
+        position: {lat: {{ location.lat }}, lng: {{ location.lon }} },
+        map: map,
+        icon: image
+      });
+    }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD9rloC3_q9b1ZwhocaDBpuXaXyJeZkKjk&callback=initMap"></script>
+  </div>
+</div>
+
+</div>
+
+<!--canvases for d3 visualizations-->
+<div class="section" id="relationvis">
+</div>
+<script src="static/d3.min.js"></script>
+<script>
+
+var width = 490,
+    height = 250;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .charge(-120)
+    .linkDistance(30)
+    .size([width, height]);
+
+var svg = d3.select("#relationvis").append("svg")
+    .attr("id", "graphcanvas")
+    .attr("width", width)
+    .attr("height", height);
+
+  d3.json("/sendjson?entity=place&id={{location.id}}", function(error, graph) {
+  if (error) throw error;
+  console.log(graph);
+
+  force
+      .nodes(graph.nodes)
+      .links(graph.links)
+      //.linkStrength(function(links) { return (links.value/20)};);
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(graph.links)
+    .enter().append("line")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 5)
+      .style("fill", function(d) { return color(d.group); })
+      .call(force.drag);
+
+  var texts = svg.selectAll("text.label")
+    .data(graph.nodes)
+    .enter().append("text")
+    .attr("class", "label")
+    .attr("fill", "black")
+    .text(function(d) { return d.name; });
+ /* node.append("text")
+    .attr("dx", 12)
+    .attr("dy", ".35em")
+      .text(function(d) { return d.name; });
+*/
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+
+    texts.attr("transform", function(d) {
+        return "translate(" + (d.x +5) + "," + d.y + ")";
+    });
+  });
+});
+
+</script>
+
+</div>
+{% endblock %}

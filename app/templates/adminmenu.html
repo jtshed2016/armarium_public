@@ -1,0 +1,27 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<h3>Admin Menu</h3>
+<div class="content">
+	<div class="content">
+		<a href="{{ url_for('edit_ms') }}">Edit Manuscript</a>
+	</div>
+	<div class="content">
+		<a href="{{ url_for('edit_volume') }}">Edit MS Volume</a>
+	</div>
+	<div class="content">
+		<a href="{{ url_for('edit_contents') }}">Edit MS text item</a>
+	</div>
+	<div class="content">
+		<a href="{{ url_for('add_user') }}">Add User</a>
+	</div>
+	<div class="content">
+		<a href="{{ url_for('add_ex_doc') }}">Add External Document</a>
+	</div>
+
+</div>
+
+
+
+
+
+{% endblock %}

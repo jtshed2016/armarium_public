@@ -1,0 +1,43 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<h3>Edit Robbins MS {{ edit_vol.ms_id }}, Volume {{ edit_vol.numeration }}</h3>
+<div class="content" >
+<form action="" method="POST" name="edit_volume" id="volform">
+<p>Numeration (Number of volume in sequence for a given work)</p>
+{{ volform.numeration }}
+<p>Support</p>
+{{ volform.support }}
+<p>Extent (number of leaves or pages)</p>
+{{ volform.extent }}
+<p>Extent Unit (pages, leaves, etc.)</p>
+{{ volform.extent_unit }}
+<p>Width of Binding</p>
+{{ volform.bound_width }}
+<p>Height of Binding</p>
+{{ volform.bound_height }}
+<p>Width of Leaves</p>
+{{ volform.leaf_width }}
+<p>Height of Leaves</p>
+{{ volform.leaf_height }}
+<p>Width of Written Area</p>
+{{ volform.written_width }}
+<p>Height of Written Area</p>
+{{ volform.written_height }}
+<p>Unit of area measurement (e.g. cm, mm, inches)</p>
+{{ volform.size_unit }}
+<p>Register of Quires</p>
+{{ volform.quire_register }}
+<p>Physical Arrangement</p>
+{{ volform.phys_arrangement }}
+<p>Scripts (ctrl-/command-click to select multiple)</p>
+{{ volform.scripts }}
+<p>Number of Lines (ctrl-/command-click to select multiple)</p>
+{{ volform.lines }}
+<p>Ruling Material (ctrl-/command-click to select multiple)</p>
+{{ volform.ruling }}
+{{ volform.vol_id}}
+<input type="submit" value="Save changes to volume">
+</form>
+</div>
+{% endblock %}

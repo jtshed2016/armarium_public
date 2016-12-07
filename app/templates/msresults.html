@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	<h3>{{ headline }}</h3>
+	<div id="contentsdiv">
+		<table id="contentstable">
+		<tr>
+			<td>Title</td>
+			<td>Shelfmark</td>
+			<td>Date</td>
+			<td>Language</td>
+		</tr>
+		{% for record in recs %}
+		<tr>
+			<td>{{record.titles.filter_by(title_type='main').first().title_text}}</td>
+			<td><a href="ms{{record.id}}">{{record.shelfmark}}</a></td>
+			{% if record.date2 %}
+			<td>{{record.date1}}-{{record.date2}}</td>
+			{% else %}
+			<td>{{record.date1}}</td>
+			{% endif %}
+			<td><a href="{{url_for('ms_by_language', focuslanguage=record.language)}}">{{record.language}}</a></td>
+		</tr>
+		{% endfor %}
+		</table>
+	</div>
+{% endblock %}
+
+

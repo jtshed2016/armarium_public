@@ -1,0 +1,51 @@
+{% extends "adminbase.html" %}
+
+{% block javascript %}
+<script type="text/javascript" src="{{ url_for('static', filename='adminexdoc.js') }}">
+</script>
+{% endblock %}
+
+{% block content %}
+
+
+<div class="container">
+	<h3>Add New External Document</h3>
+	<p>This form is for adding new references to materials that cite or are based on Robbins manuscripts but are not themselves Robbins manuscripts (i.e. works that would be included in MARC fields 510 or 581).</p>
+	
+	<p>Fields with an asterisk are mandatory.</p>
+
+	<div class="inputform">
+		<form action = "" method="post" name="add_ext_doc">
+			<p>Manuscript*: Robbins MS{{ newExForm.ex_ref_ms }}</p>
+			
+			<p>Title of source work (journal or book)*</p>
+			<br> 
+			<em>Select book or journal from menu if already in database, otherwise enter</em>
+			<br>
+			<input type="radio" name="inputoption" value="new" id="newinput" checked><em>New source:</em> {{ newExForm.ex_main_title_new }}
+			<br>
+			<p>Publisher{{ newExForm.ex_publisher }}</p>
+			<p>Location of publication{{ newExForm.ex_pub_loc }}</p>
+			<input type="radio" name="inputoption" value="old" id="oldinput" ><em>Existing source</em> {{ newExForm.ex_main_title }}
+			</p>
+			<p>Title (chapter or article title)* {{ newExForm.ex_sub_title }}</p>
+			<p>Author(s)*{{ newExForm.ex_author }}</p>
+			<p>Volume{{ newExForm.ex_pub_volume }}</p>
+			<p>Issue{{ newExForm.ex_pub_issue }}</p>
+			<p>Page range{{ newExForm.ex_page_range }}</p>
+			<p>Year*{{ newExForm.ex_pub_year }}</p>
+			<p>Notes (any additional info, e.g. focus, relevant areas){{ newExForm.ex_pub_notes }}</p>
+
+
+			<input type="submit" id="docsubmit" value="Add document" disabled>
+		</form>
+	</div>  
+
+
+</div>
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	<div class="section">
+
+	<div id="contentsdiv">
+		<ul id="orglist">
+		{% for org in orgs %}
+			<li><b><a href="org{{ org.id }}">{{org.name }}</a> </b></li>
+			
+			
+		{% endfor %}
+
+		</ul>
+	</div>
+{% endblock %}

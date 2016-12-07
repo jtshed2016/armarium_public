@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	<div id="contentsdiv">
+		<ul id="contentslist">
+		
+		{% for person in people %}
+			<li><a href="person{{ person.id }}">{{person.name_main}}</a>
+			{%- if (person.year_1 != None) or (person.year_2 != None) -%}
+				{{ ',' }}
+				{% if person.datetype == 'century' %}
+					{%if person.year_1 != None %}
+						{{ person.year_1|replace("0", "")}}
+					{% endif %}
+					
+					{%if person.year_2 != None %}
+						{{ '-' }}
+						{{ person.year_2|replace("0", "")}}
+					{% endif %}
+					
+					{{ 'century' }}
+				
+
+				{% else %}
+				
+					{% if person.datetype == 'approx' %}
+					{{ 'ca.' }}
+					{% elif person.datetype == 'profess' %}
+					{{ 'active' }}
+					{% endif %}
+					
+					{% if person.year_1 != None %}
+					{{ person.year_1 }}
+					{% endif %}
+					
+					{% if person.year_2 != None %}
+					{{ '-' }}
+					{{ person.year_2 }}
+					{% endif %}
+				{% endif %}
+			{% endif %}
+			</li>
+		{% endfor %}
+		</ul>
+	</div>
+{% endblock %}
+
+

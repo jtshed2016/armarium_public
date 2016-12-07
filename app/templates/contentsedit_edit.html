@@ -1,0 +1,17 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<h3>Edit Content Item from Robbins MS {{ edit_item.ms_id }}</h3>
+<div class="content">
+<form action="" method="POST" name="edit_content">
+<p>Starting Folio</p>
+{{ contentform.fol_start_num }} {{ contentform.fol_start_side }}
+<p>Ending Folio</p>
+{{ contentform.fol_end_num }} {{ contentform.fol_end_side }}
+<p>Text</p>
+{{ contentform.fol_text }}<br>
+{{ contentform.item_id }}
+<input type="submit" value="Save changes to MS content">
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "adminbase.html" %}
+
+{% block javascript %}
+<script type="text/javascript" src="{{ url_for('static', filename='adminexdoc.js') }}">
+</script>
+{% endblock %}
+
+{% block content %}
+
+
+<div class="container">
+	<h3>Edit External Document</h3>
+	<div class="inputform">
+		<form action = "" method="post" name="update_ext_doc">
+			<p>Manuscript*: Robbins MS{{ modExForm.ex_ref_ms }}</p>
+			
+			<p>Title of source work (journal or book)*</p>
+			<br> 
+			<em>Select book or journal from menu if already in database, otherwise enter</em>
+			<br>
+			<input type="radio" name="inputoption" value="new" id="newinput" checked><em>New source:</em> {{ modExForm.ex_main_title_new }}
+			<p>Publisher{{ modExForm.ex_publisher }}</p>
+			<p>Location of publication{{ modExForm.ex_pub_loc }}</p>
+			<br>
+			<input type="radio" name="inputoption" value="old" id="oldinput" ><em>Existing source</em> {{ modExForm.ex_main_title }}
+			</p>
+			<p>Title (chapter or article title)* {{ modExForm.ex_sub_title }}</p>
+			<p>Author(s)*{{ modExForm.ex_author }}</p>
+			<p>Volume{{ modExForm.ex_pub_volume }}</p>
+			<p>Issue{{ modExForm.ex_pub_issue }}</p>
+			<p>Page range{{ modExForm.ex_page_range }}</p>
+			<p>Year*{{ modExForm.ex_pub_year }}</p>
+			<p>Notes (any additional info, e.g. focus, relevant areas){{ modExForm.ex_pub_notes }}</p>
+			{{ modExForm.ex_id}}
+
+			<input type="submit" id="docsubmit" value="Submit Changes to Document">
+		</form>
+	</div>  
+
+
+</div>
+
+
+
+
+
+{% endblock %}

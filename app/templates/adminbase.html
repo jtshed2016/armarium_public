@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Admin | {{ pagetitle }}</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+		<meta charset="UTF-8">
+		{% block javascript %}
+		<script type="text/javascript" src="{{url_for('static', filename='script.js') }}"></script>
+		{% endblock %}
+	</head>
+
+	<body>
+		<nav>
+			<a href="{{ url_for('homepage') }}">Home (Public page)</a>
+			<a href="{{ url_for('admin_menu') }}">Admin Menu</a>
+			<a href="{{ url_for('logout_user') }}">Log Out</a>
+		</nav>
+	{% block content %}
+	{% endblock %}
+
+	</body>
+
+
+</html>

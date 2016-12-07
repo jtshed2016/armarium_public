@@ -1,0 +1,19 @@
+{% extends "adminbase.html" %}
+{% block javascript %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+{% if doctype == 'Content Item' %}
+<script type="text/javascript" src="{{url_for('static', filename='contentselect.js')}}"></script>
+{% endif %}
+{% endblock %}
+{% block content %}
+<h3>Select {{ doctype }} to Edit</h3>
+<div class="content">
+<form action="" method="GET" name="select_item">
+{{ edit_item_select.item_to_edit }}
+{% if doctype == 'Content Item' %}
+<select id="content_item" name="content_item"></select>
+{% endif %}
+<input type="submit" value="Select {{ doctype }}">
+</form>
+</div>
+{% endblock %}

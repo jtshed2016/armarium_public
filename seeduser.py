@@ -6,24 +6,29 @@ from base64 import b64encode, b64decode
 from app import db, models
 
 
-import os
+import os, getpass
 from fastpbkdf2 import pbkdf2_hmac
 
-firstusername = raw_input('Enter the user name: ')
-firstpw = raw_input('Enter password: ')
+firstusername = ''
+firstpw = 'a'
+firstpw_II = 'b'
 
+while (firstusername == '') or (firstpw != firstpw_II):
+	firstusername = raw_input('Enter the user name: \n')
+	#firstpw = raw_input('Enter password: ')
+	firstpw = getpass.getpass('Enter password: \n')
+	firstpw_II = getpass.getpass('Enter password again: \n')
+
+	if firstusername == '':
+		print('Please enter a username.')
+	if firstpw != firstpw_II:
+		print('Password must match itself. Please try again.')
 
 firstsalt = os.urandom(24)
 
 
 firsthash = pbkdf2_hmac('sha512', firstpw, firstsalt, 100000)
 firsthash = b64encode(firsthash)
-
-print '****Initial values****'
-print firstusername, type(firstusername)
-print firstsalt, type(firstsalt)
-print b64encode(firstsalt)
-print firsthash, type(firsthash)
 
 
 firstuser = models.user(

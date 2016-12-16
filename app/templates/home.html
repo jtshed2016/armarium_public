@@ -54,5 +54,164 @@
 		<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD9rloC3_q9b1ZwhocaDBpuXaXyJeZkKjk&callback=initCollMap"></script>
 		<p><em>Circles indicate countries of origin of Robbins Collection manuscripts</em></p>
 	</div>
+
+	
+	<script src="{{ url_for('static', filename = 'd3.v4.min.js') }}"></script>
+	<div class="section" id="centvisholder">
+		<div id="centtooltip" class="tooltip"></div>
+		<svg id="centvis" width = "300" height = "300"></svg>
+		<div class="viscontext">
+		<h3>Chronology</h3>
+		<p>The majority of manuscripts held by the Robbins Collection are early modern, as well as some medieval and newer materials.</p>
+		</div>
+	</div>
+	<script>
+	data = {{ centuries }};
+
+	var svg = d3.select("#centvis"),
+		margin = {top: 20, right: 20, bottom: 30, left: 40},
+		width = svg.attr("width") - margin.left - margin.right,
+		height = svg.attr('height') - margin.top - margin.bottom;
+
+		svg.append("rect")
+		.attr("width", "100%")
+		.attr("height", "100%")
+		.attr("fill", "#fefae9");
+
+	var x = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+	y = d3.scaleLinear().rangeRound([height, 0]);
+
+	var g = svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+		x.domain(data.map(function(d) {return d.century + "th"}));
+		y.domain([0, 50]);
+
+		g.append("g")
+			.attr("class", "axis axis--x")
+			.attr("transform", "translate(0," + height + ")")
+			.call(d3.axisBottom(x))
+			.append("text")
+			.text("Century")
+			.attr("class", "axislabel")
+			.attr("y", 27)
+			.attr("x", width/2);
+
+		
+
+		g.append("g")
+			.attr("class", "axis axis--y")
+			.call(d3.axisLeft(y).ticks(10))
+			.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", -30)
+			.attr("dy", ".071em")
+			.style("text-anchor", "end")
+			.attr("class", "axislabel")
+			.text("Number of Manuscripts");
+
+		g.selectAll(".bar")
+			.data(data)
+			.enter()
+				.append("a")
+				.attr("xlink:href", function(d) {return "mss_by_century" + d.century})
+				.append("rect")
+				.attr("class", "bar")
+				.attr("x", function(d) {return x(d.century + "th"); })
+				.attr("y", function(d) {return y(d.frequency); })
+				.attr("width", x.bandwidth())
+				.attr("height", function(d) {return height - y(d.frequency); })
+				.on('mouseover', function(d) {
+					d3.select("#centtooltip")
+					.style("visibility", "visible")
+					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
+					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
+					.html(d.century + "th century: " + d.frequency + " manuscripts")
+					})
+				.on('mouseout', function() {d3.select("#centtooltip").style("visibility", "hidden");});
+
+	</script>
+
+	<div class="section" id="langvisholder">
+		<div id="langtooltip" class="tooltip"></div>
+		<svg id="langvis" width = "400" height = "300"></svg>
+		<div class="viscontext">
+		<h3>Languages</h3>
+		<p>The large number of Latin and Italian manuscripts reflects the Robbins Collection's strengths in canon law; however, the holdings also span a variety of European and Middle Eastern languages.</p>
+		</div>
+	</div>
+	<script>
+	var svg = d3.select("#langvis"),
+		margin = {top: 20, right: 20, bottom: 75, left: 40},
+		width = svg.attr("width") - margin.left - margin.right,
+		height = svg.attr('height') - margin.top - margin.bottom;
+
+	svg.append("rect")
+		.attr("width", "100%")
+		.attr("height", "100%")
+		.attr("fill", "#fefae9");
+
+	var x = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+	y = d3.scaleLinear().rangeRound([height, 0]);
+
+	var g = svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+	data = {{ languages|safe }}
+
+		x.domain(data.map(function(d) {return d.language;}));
+		y.domain([0, 150]);
+
+		g.append("g")
+			.attr("class", "axis axis--x")
+			.attr("id", "xaxis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(d3.axisBottom(x))
+			.selectAll("text")
+			.attr("transform", "rotate(-25)");
+
+		//add x-axis label
+		d3.select("#xaxis")
+			.append("text")
+			.text("Language")
+			.attr("transform", "translate("+ (width/2).toString() + "," + (margin.bottom* (3/4)).toString() + ")")
+			.attr("class", "axislabel");
+
+		g.append("g")
+			.attr("class", "axis axis--y")
+			.call(d3.axisLeft(y).ticks(10))
+			.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", -30)
+			.attr("dy", ".071em")
+			.style("text-anchor", "end")
+			.attr("class", "axislabel")
+			.text("Number of Manuscripts");
+
+		g.selectAll(".bar")
+			.data(data)
+			.enter()
+				.append("a")
+				.attr("xlink:href", function(d) {return "mss_by_language_" + d.language})
+				.append("rect")
+				.attr("class", "bar")
+				.attr("x", function(d) {return x(d.language); })
+				.attr("y", function(d) {return y(d.frequency); })
+				.attr("width", x.bandwidth())
+				.attr("height", function(d) {return height - y(d.frequency); })
+				.attr("language", function(d) {return d.language;})
+				.on("mouseover", function(d) {
+					//console.log(d.language);
+					//console.log(d.frequency);
+					d3.select("#langtooltip")
+					.style("visibility", "visible")
+					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
+					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
+					.html(d.language + ": " + d.frequency +" manuscripts")
+				})
+				.on("mouseout", function() {d3.select("#langtooltip").style("visibility", "hidden")});
+	</script>
 	</div>
 {% endblock %}

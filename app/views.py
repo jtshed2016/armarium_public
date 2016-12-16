@@ -14,7 +14,7 @@ from base64 import b64encode, b64decode
 
 from sqlalchemy import func, distinct
 
-#print('***RUNNING views.py')
+
 
 
 
@@ -26,6 +26,8 @@ def homepage():
 	lons = 0
 	count = 0
 	placedict = {}
+	langdict = {}
+	centdict = {}
 
 	allmss = models.manuscript.query.all()
 	for ms in allmss:
@@ -40,16 +42,32 @@ def homepage():
 					lats = lats + allPlace.lat
 					lons = lons + allPlace.lon
 
+		cent = str(ms.date1/100 +1)[:2]
+
+		if cent not in centdict:
+			centdict[cent] = 1
+		else:
+			centdict[cent] += 1
+
+		if ms.language not in langdict:
+			langdict[ms.language] = 1
+		else:
+			langdict[ms.language] += 1
+
+	centobj = dumps([{'century': key, 'frequency': centdict[key]} for key in sorted(centdict.keys())])
+	subbedcent = re.sub(r'[\"\' ]', '', centobj)
+
 	avlats = lats/count
 	avlons = lons/count
-	#print placedict
-	#print avlats, avlons
-	placeobj = dumps(placedict)
-	#need to use regex to remove quotes in json string and 
-	subbedplace =re.sub(r'[\"\' ]', '', placeobj)
-	#print(subbedplace)
 
-	return render_template('home.html', avgLat = avlats, avgLon = avlons, places=subbedplace, pagetitle = 'Manuscripts of the Robbins Collection')
+	placeobj = dumps(placedict)
+	#need to use regex to remove quotes in json string  
+	subbedplace =re.sub(r'[\"\' ]', '', placeobj)
+
+	langobj = dumps([{'language': key, 'frequency': langdict[key]} for key in langdict])
+	subbedlangs = re.sub(r'[\"\' ]', '', langobj)
+
+	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, centuries = subbedcent, languages = langobj, pagetitle = 'Manuscripts of the Robbins Collection')
 
 @app.route('/add_ms', methods = ['GET', 'POST'])
 def add_ms():
@@ -60,6 +78,15 @@ def add_ms():
 def list_mss():
 	allmss = models.manuscript.query.all()
 	return render_template('msresults.html', recs = allmss, headline = 'All Manuscripts')
+
+@app.route('/mss_by_century<cent>', methods=['GET'])
+def ms_by_century(cent):
+	allmss = models.manuscript.query.all()
+	centmss = [ms for ms in allmss if str(ms.date1/100+1)[:2] == cent]
+	print centmss
+	headline = cent + 'th-century Manuscripts'
+
+	return render_template('msresults.html', recs = centmss, headline = headline)
 
 @app.route('/mss_by_script<idno>', methods=['GET'])
 def ms_by_script(idno):

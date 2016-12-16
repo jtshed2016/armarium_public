@@ -125,17 +125,18 @@ nav a {
 
 /*div for map on home page*/
 .mapholder {
-	text-align: center;
+	/*text-align: center;*/
 	height: 400px;
 }
+
 
 /*immediate div for map on home page*/
 #collectionmap {
 	height: 90%;
-	width: 75%;
+	width: 50%;
 	margin: .5em;
 	display: inline-block;
-	text-align: center;
+	text-align: left;
 }
 
 /*div for map on individual "place" page*/
@@ -162,6 +163,14 @@ nav a {
 	width: 48%;
 	height: 500px;
 	overflow-y: scroll;
+}
+/*div for graphs on home page*/
+.attrvis {
+	height: 100%;
+	text-align: left;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #000000;
 }
 
 header {
@@ -219,7 +228,7 @@ li {
 }
 
 
-/* for D3 vis */
+/* for d3 graph vis */
 .node {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -242,6 +251,46 @@ li {
 	text-align: center;
 }
 
+/* for d3 histogram vis (front page) */
+
+.bar { 
+	fill: steelblue;
+}
+.bar:hover {
+	fill:brown;
+}
+
+svg text {
+	fill: black;
+	font: 10px sans-serif;
+	text-anchor: end;
+}
+.axislabel {
+	fill: black;
+	font: 15px sans-serif;
+	text-anchor: middle;
+}
+
+/*tooltip style and code from Steve Hall, http://projects.delimited.io/experiments/chord-diagrams/hair.html */
+.tooltip {
+    color: white;
+    opacity: .9;
+    background: #333;
+    padding: 5px;
+    border: 1px solid lightgrey;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 10;
+    visibility: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.viscontext {
+	display: inline-block;
+	max-width: 40%;
+	vertical-align: 150%;
+}
 /*
 #graphcanvas {
 	max-width: 50%

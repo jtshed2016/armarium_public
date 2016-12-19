@@ -49,10 +49,10 @@ def homepage():
 		else:
 			centdict[cent] += 1
 
-		if ms.language not in langdict:
-			langdict[ms.language] = 1
+		if ms.ms_language.name not in langdict:
+			langdict[ms.ms_language.name] = 1
 		else:
-			langdict[ms.language] += 1
+			langdict[ms.ms_language.name] += 1
 
 	centobj = dumps([{'century': key, 'frequency': centdict[key]} for key in sorted(centdict.keys())])
 	subbedcent = re.sub(r'[\"\' ]', '', centobj)
@@ -83,7 +83,6 @@ def list_mss():
 def ms_by_century(cent):
 	allmss = models.manuscript.query.all()
 	centmss = [ms for ms in allmss if str(ms.date1/100+1)[:2] == cent]
-	print centmss
 	headline = cent + 'th-century Manuscripts'
 
 	return render_template('msresults.html', recs = centmss, headline = headline)
@@ -106,10 +105,11 @@ def ms_by_ruling(idno):
 
 	return render_template('msresults.html', recs = rulemss, headline = headline)
 
-@app.route('/mss_by_language_<focuslanguage>', methods = ['GET'])
-def ms_by_language(focuslanguage):
-	langmss = models.manuscript.query.filter_by(language=focuslanguage)
-	headline = 'Manuscripts written in ' + focuslanguage
+@app.route('/mss_by_language<focus_lang_id>', methods = ['GET'])
+def ms_by_language(focus_lang_id):
+	focuslanguage = models.language.query.get(focus_lang_id)
+	langmss = models.manuscript.query.filter_by(ms_language = focuslanguage)
+	headline = 'Manuscripts written in ' + focuslanguage.name
 
 	return render_template('msresults.html', recs = langmss, headline = headline)
 

@@ -20,7 +20,7 @@
 			{% else %}
 			<td>{{record.date1}}</td>
 			{% endif %}
-			<td><a href="{{url_for('ms_by_language', focuslanguage=record.language)}}">{{record.language}}</a></td>
+			<td><a href="{{url_for('ms_by_language', focus_lang_id=record.ms_language.id)}}">{{record.ms_language.name}}</a></td>
 		</tr>
 		{% endfor %}
 		</table>

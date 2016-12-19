@@ -67,7 +67,7 @@ class manuscript(db.Model):
 	date1 = db.Column(db.Integer)
 	date2 = db.Column(db.Integer)
 	datetype = db.Column(db.String(1))
-	language = db.Column(db.String(60))
+	language = db.Column(db.Integer, db.ForeignKey('language.id'))
 	summary = db.Column(db.String(1000))
 	#520
 	ownership_history = db.Column(db.String(1000))
@@ -315,6 +315,17 @@ class ruling(db.Model):
 	
 	def __repr__(self):
 		return '<ruling ' + self.name + '>'
+
+#many manuscripts to one language
+class language(db.Model):
+	id = db.Column(db.Integer, primary_key = True)
+	name = db.Column(db.String(60))
+	mss = db.relationship('manuscript', 
+		backref = 'ms_language',
+		lazy='dynamic')
+
+	def __repr__(self):
+		return '<language ' + str(self.id) + ': ' + self.name + '>'
 	
 class user(db.Model):
 	id = db.Column(db.Integer, primary_key = True)

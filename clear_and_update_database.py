@@ -28,6 +28,7 @@ sourceobj.close()
 #parse data
 allrecs = data_parse_and_load.load(sourcedict)
 
+print 'Loading to DB'
 #load mss into database
 for record in allrecs:
 	if record == 'RobbinsMSCould not find valid shelfmark':
@@ -41,7 +42,7 @@ for record in allrecs:
 		date1 = allrecs[record]['date1'],
 		date2 = allrecs[record]['date2'],
 		datetype = allrecs[record]['datetype'],
-		language = allrecs[record]['language'],
+		#language = allrecs[record]['language'],
 		num_volumes = allrecs[record]['volumes'],
 		summary = allrecs[record]['summary'],
 		ownership_history = allrecs[record]['ownership_history'],
@@ -52,7 +53,19 @@ for record in allrecs:
 		)
 	db.session.add(ms)
 
+
 	db.session.commit()
+
+	#check whether ms's language is already in database; create record if not, otherwise, establish relationship
+	if models.language.query.filter_by(name=allrecs[record]['language']).first() == None:
+		newLang = models.language(
+			name = allrecs[record]['language'],
+			mss = [ms]
+			)
+	else:
+		mslang = models.language.query.filter_by(name=allrecs[record]['language']).first()
+		mslang.mss.append(ms)
+
 
 	#iterate over volumes to add volume-specific entities (volume attributes, watermarks, content items)
 	#volcounter = used to number volumes in order ("Volume 1," etc.)
@@ -145,7 +158,7 @@ for record in allrecs:
 			else:
 				volItem.ruling.append(prevRuleObj)
 
-			
+		
 
 	db.session.commit()
 

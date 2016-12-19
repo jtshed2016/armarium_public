@@ -49,7 +49,7 @@
 
 {% endif %}
 <br>
-<p><b>Language: </b><a href="{{url_for('ms_by_language', focuslanguage=ms.language)}}">{{ ms.language }}</a></p>
+<p><b>Language: </b><a href="{{url_for('ms_by_language', focus_lang_id=ms.ms_language.id)}}">{{ ms.ms_language.name }}</a></p>
 
 {% if ms.publisher %}
 <p>Published by: {{ ms.publisher }}</p>

@@ -15,11 +15,6 @@ from base64 import b64encode, b64decode
 from sqlalchemy import func, distinct
 
 
-
-
-
-
-
 @app.route('/')
 def homepage():
 	lats = 0
@@ -29,10 +24,14 @@ def homepage():
 	langdict = {}
 	centdict = {}
 
+	
 	allmss = models.manuscript.query.all()
+	
+	
 	for ms in allmss:
 		count +=1
 		for allPlace in ms.places:
+			#count up the number of MSS from each geographic location
 			if allPlace.place_type == 'country':
 				
 				if allPlace.place_name not in placedict:
@@ -42,6 +41,7 @@ def homepage():
 					lats = lats + allPlace.lat
 					lons = lons + allPlace.lon
 
+		#count up manuscripts from each century
 		cent = str(ms.date1/100 +1)[:2]
 
 		if cent not in centdict:
@@ -49,10 +49,11 @@ def homepage():
 		else:
 			centdict[cent] += 1
 
+		#count up manuscripts in each language
 		if ms.ms_language.name not in langdict:
-			langdict[ms.ms_language.name] = 1
+			langdict[ms.ms_language.name] = {'id': ms.ms_language.id, 'count': 1}
 		else:
-			langdict[ms.ms_language.name] += 1
+			langdict[ms.ms_language.name]['count'] += 1
 
 	centobj = dumps([{'century': key, 'frequency': centdict[key]} for key in sorted(centdict.keys())])
 	subbedcent = re.sub(r'[\"\' ]', '', centobj)
@@ -64,10 +65,49 @@ def homepage():
 	#need to use regex to remove quotes in json string  
 	subbedplace =re.sub(r'[\"\' ]', '', placeobj)
 
-	langobj = dumps([{'language': key, 'frequency': langdict[key]} for key in langdict])
+	langobj = dumps([{'language': key, 'frequency': langdict[key]['count'], 'id': langdict[key]['id']} for key in langdict])
 	subbedlangs = re.sub(r'[\"\' ]', '', langobj)
 
-	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, centuries = subbedcent, languages = langobj, pagetitle = 'Manuscripts of the Robbins Collection')
+
+	#Count up people in collection
+	allpeople = models.person.query.all()
+	peoplecountdict = {}
+
+	for eachperson in allpeople:
+		#get set of MS IDs for each person and get its length -- this is the number of MSS they are related to
+		mspersonrelcount = len(set([association.ms_id for association in eachperson.ms_relations.all()]))
+		#print eachperson.name_display
+		#print mspersonrelcount
+		peoplecountdict[eachperson.name_display] = {'count': mspersonrelcount, 'id': eachperson.id}
+
+	#"invert" dictionary so we can rank most frequent people: frequency maps to a list of people
+	countdict_inv = {}
+	for x in peoplecountdict:
+		if peoplecountdict[x]['count'] not in countdict_inv:
+			countdict_inv[peoplecountdict[x]['count']] = [{'name': x, 'id': peoplecountdict[x]['id']}]
+		else:
+			countdict_inv[peoplecountdict[x]['count']].append({'name': x, 'id': peoplecountdict[x]['id']})
+
+	sorted_dict = [(key, countdict_inv[key]) for key in sorted(countdict_inv.keys(), reverse=True)]
+	#format: [(frequency1: [name1, name2, ...]), (frequency2: [name1, name2, ...]), ...]
+
+
+	freqpeople = []
+	for personfreq in sorted_dict:
+		#print personfreq[0]
+		for ind_person in personfreq[1]:
+			
+			if len(freqpeople) < 10:
+				freqpeople.append({'name': ind_person['name'], 'id': ind_person['id'], 'frequency': personfreq[0]})
+				#print ind_person
+			else:
+				break
+				
+	peopleobj = json.dumps(freqpeople)
+
+
+	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, centuries = subbedcent,
+	 languages = langobj, people = peopleobj, pagetitle = 'Manuscripts of the Robbins Collection')
 
 @app.route('/add_ms', methods = ['GET', 'POST'])
 def add_ms():
@@ -171,7 +211,7 @@ def ms_view(idno):
 	relat_people = {}
 	for person_assoc in pagems.assoc_people:
 		if person_assoc.person_id not in relat_people:
-			relat_people[person_assoc.person_id] = {}
+			relat_people[person_assoc._id] = {}
 			relat_people[person_assoc.person_id]['roles'] = person_assoc.assoc_type
 			relat_people[person_assoc.person_id]['name'] = person_assoc.person.name_display
 		else:

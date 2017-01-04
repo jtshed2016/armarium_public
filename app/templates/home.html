@@ -143,7 +143,7 @@
 	</div>
 	<script>
 	var svg = d3.select("#langvis"),
-		margin = {top: 20, right: 20, bottom: 75, left: 40},
+		margin = {top: 20, right: 20, bottom: 75, left: 60},
 		width = svg.attr("width") - margin.left - margin.right,
 		height = svg.attr('height') - margin.top - margin.bottom;
 
@@ -160,20 +160,19 @@
 
 
 	data = {{ languages|safe }}
-
 		x.domain(data.map(function(d) {return d.language;}));
 		y.domain([0, 150]);
 
 		g.append("g")
 			.attr("class", "axis axis--x")
-			.attr("id", "xaxis")
+			.attr("id", "xaxis-lang")
 			.attr("transform", "translate(0," + height + ")")
 			.call(d3.axisBottom(x))
 			.selectAll("text")
 			.attr("transform", "rotate(-25)");
 
 		//add x-axis label
-		d3.select("#xaxis")
+		d3.select("#xaxis-lang")
 			.append("text")
 			.text("Language")
 			.attr("transform", "translate("+ (width/2).toString() + "," + (margin.bottom* (3/4)).toString() + ")")
@@ -194,7 +193,7 @@
 			.data(data)
 			.enter()
 				.append("a")
-				.attr("xlink:href", function(d) {return "mss_by_language_" + d.language})
+				.attr("xlink:href", function(d) {return "mss_by_language" + d.id})
 				.append("rect")
 				.attr("class", "bar")
 				.attr("x", function(d) {return x(d.language); })
@@ -203,8 +202,6 @@
 				.attr("height", function(d) {return height - y(d.frequency); })
 				.attr("language", function(d) {return d.language;})
 				.on("mouseover", function(d) {
-					//console.log(d.language);
-					//console.log(d.frequency);
 					d3.select("#langtooltip")
 					.style("visibility", "visible")
 					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
@@ -212,6 +209,86 @@
 					.html(d.language + ": " + d.frequency +" manuscripts")
 				})
 				.on("mouseout", function() {d3.select("#langtooltip").style("visibility", "hidden")});
+	</script>
+
+	<div class="section" id="peoplevisholder">
+		<div id="peopletooltip" class="tooltip"></div>
+		<svg id="peoplevis" width = "400" height = "300"></svg>
+		<div class="viscontext">
+			<h3>People</h3>
+			<p>Many well-known figures share a history with the Robbins Collection's holdings, whether as subjects, authors, or owners of manuscripts.  Here are some of those that appear most frequently in the records.</p>
+		</div>
+	</div>
+	<script>
+
+	var svg = d3.select("#peoplevis"),
+	margin = {top: 20, right: 20, bottom: 75, left: 60},
+	width = svg.attr("width") - margin.left - margin.right,
+	height = svg.attr('height') - margin.top - margin.bottom;
+
+	svg.append("rect")
+		.attr("width", "100%")
+		.attr("height", "100%")
+		.attr("fill", "#fefae9");
+
+	var x = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+	y = d3.scaleLinear().rangeRound([height, 0]);
+
+	var g = svg.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+	data = {{ people|safe }}
+		x.domain(data.map(function(d) {return d.name;}));
+		y.domain([0, 60]);
+
+		g.append("g")
+			.attr("class", "axis axis--x")
+			.attr("id", "xaxis-people")
+			.attr("transform", "translate(0," + height + ")")
+			.call(d3.axisBottom(x))
+			.selectAll("text")
+			.attr("transform", "rotate(-25)");
+
+		//add x-axis label
+		d3.select("#xaxis-people")
+			.append("text")
+			.text("Person")
+			.attr("transform", "translate("+ (width/2).toString() + "," + (margin.bottom* (3/4)).toString() + ")")
+			.attr("class", "axislabel");
+
+		g.append("g")
+			.attr("class", "axis axis--y")
+			.call(d3.axisLeft(y).ticks(10))
+			.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", -30)
+			.attr("dy", ".071em")
+			.style("text-anchor", "end")
+			.attr("class", "axislabel")
+			.text("Appearances in Manuscript Records");
+
+		g.selectAll(".bar")
+			.data(data)
+			.enter()
+				.append("a")
+				.attr("xlink:href", function(d) {return "person" + d.id})
+				.append("rect")
+				.attr("class", "bar")
+				.attr("x", function(d) {return x(d.name); })
+				.attr("y", function(d) {return y(d.frequency); })
+				.attr("width", x.bandwidth())
+				.attr("height", function(d) {return height - y(d.frequency); })
+				.attr("language", function(d) {return d.name;})
+				.on("mouseover", function(d) {
+					d3.select("#peopletooltip")
+					.style("visibility", "visible")
+					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
+					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
+					.html(d.name + ": " + d.frequency +" manuscripts")
+				})
+				.on("mouseout", function() {d3.select("#peopletooltip").style("visibility", "hidden")});
+
 	</script>
 	</div>
 {% endblock %}

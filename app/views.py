@@ -97,7 +97,7 @@ def homepage():
 		#print personfreq[0]
 		for ind_person in personfreq[1]:
 			
-			if len(freqpeople) < 10:
+			if len(freqpeople) < 15:
 				freqpeople.append({'name': ind_person['name'], 'id': ind_person['id'], 'frequency': personfreq[0]})
 				#print ind_person
 			else:
@@ -211,7 +211,7 @@ def ms_view(idno):
 	relat_people = {}
 	for person_assoc in pagems.assoc_people:
 		if person_assoc.person_id not in relat_people:
-			relat_people[person_assoc._id] = {}
+			relat_people[person_assoc.person_id] = {}
 			relat_people[person_assoc.person_id]['roles'] = person_assoc.assoc_type
 			relat_people[person_assoc.person_id]['name'] = person_assoc.person.name_display
 		else:

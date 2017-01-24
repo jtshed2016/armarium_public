@@ -123,11 +123,16 @@
 				.attr("width", x.bandwidth())
 				.attr("height", function(d) {return height - y(d.frequency); })
 				.on('mouseover', function(d) {
+					if (d.frequency === 1) {
+						tooltext = " manuscript";
+					} else {
+						tooltext = " manuscripts";
+					}
 					d3.select("#centtooltip")
 					.style("visibility", "visible")
 					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
 					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
-					.html(d.century + "th century: " + d.frequency + " manuscripts")
+					.html(d.century + "th century: " + d.frequency + tooltext)
 					})
 				.on('mouseout', function() {d3.select("#centtooltip").style("visibility", "hidden");});
 
@@ -143,7 +148,7 @@
 	</div>
 	<script>
 	var svg = d3.select("#langvis"),
-		margin = {top: 20, right: 20, bottom: 75, left: 60},
+		margin = {top: 20, right: 20, bottom: 75, left: 40},
 		width = svg.attr("width") - margin.left - margin.right,
 		height = svg.attr('height') - margin.top - margin.bottom;
 
@@ -160,7 +165,14 @@
 
 
 	data = {{ languages|safe }}
-		x.domain(data.map(function(d) {return d.language;}));
+		x.domain(data.map(function(d) {
+			//return up to 10 characters of language name, plus ellipsis if longer; needs to match .bar entry below
+			if (d.language.length >15) {
+				return d.language.slice(0,15) + '...'
+			} else {
+				return d.language;
+			};			
+		}));
 		y.domain([0, 150]);
 
 		g.append("g")
@@ -169,7 +181,8 @@
 			.attr("transform", "translate(0," + height + ")")
 			.call(d3.axisBottom(x))
 			.selectAll("text")
-			.attr("transform", "rotate(-25)");
+			.style("text-anchor", "start")
+			.attr("transform", "rotate(25)");
 
 		//add x-axis label
 		d3.select("#xaxis-lang")
@@ -196,17 +209,29 @@
 				.attr("xlink:href", function(d) {return "mss_by_language" + d.id})
 				.append("rect")
 				.attr("class", "bar")
-				.attr("x", function(d) {return x(d.language); })
+				.attr("x", function(d) {
+					//return up to 10 characters of language name; must match x domain mapping above
+					if (d.language.length > 15) {
+						return x(d.language.slice(0,15) + "...");
+					} else {
+						return x(d.language);
+					}
+				})
 				.attr("y", function(d) {return y(d.frequency); })
 				.attr("width", x.bandwidth())
 				.attr("height", function(d) {return height - y(d.frequency); })
 				.attr("language", function(d) {return d.language;})
 				.on("mouseover", function(d) {
+					if (d.frequency === 1) {
+						tooltext = " manuscript";
+					} else {
+						tooltext = " manuscripts";
+					}
 					d3.select("#langtooltip")
 					.style("visibility", "visible")
 					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
 					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
-					.html(d.language + ": " + d.frequency +" manuscripts")
+					.html(d.language + ": " + d.frequency + tooltext)
 				})
 				.on("mouseout", function() {d3.select("#langtooltip").style("visibility", "hidden")});
 	</script>
@@ -222,7 +247,7 @@
 	<script>
 
 	var svg = d3.select("#peoplevis"),
-	margin = {top: 20, right: 20, bottom: 75, left: 60},
+	margin = {top: 20, right: 20, bottom: 75, left: 40},
 	width = svg.attr("width") - margin.left - margin.right,
 	height = svg.attr('height') - margin.top - margin.bottom;
 
@@ -239,7 +264,15 @@
 
 
 	data = {{ people|safe }}
-		x.domain(data.map(function(d) {return d.name;}));
+		x.domain(data.map(function(d) {
+			//Return first 10 characters of name, or whole name if shorter; this needs to match ".bar" entry below
+			if (d.name.length >15) {
+				return d.name.slice(0,15) + '...'
+			} else {
+				return d.name;
+			};
+			
+		}));
 		y.domain([0, 60]);
 
 		g.append("g")
@@ -248,7 +281,8 @@
 			.attr("transform", "translate(0," + height + ")")
 			.call(d3.axisBottom(x))
 			.selectAll("text")
-			.attr("transform", "rotate(-25)");
+			.style("text-anchor", "start")
+			.attr("transform", "rotate(25)");
 
 		//add x-axis label
 		d3.select("#xaxis-people")
@@ -275,17 +309,30 @@
 				.attr("xlink:href", function(d) {return "person" + d.id})
 				.append("rect")
 				.attr("class", "bar")
-				.attr("x", function(d) {return x(d.name); })
+				.attr("x", function(d) {
+					//Return first 10 characters of name, or whole name if shorter; this needs to match "x.domain" mapping above
+					if (d.name.length >15) {
+						return x(d.name.slice(0,15) + '...')
+					} else {
+						return x(d.name);
+					};
+
+				})
 				.attr("y", function(d) {return y(d.frequency); })
 				.attr("width", x.bandwidth())
 				.attr("height", function(d) {return height - y(d.frequency); })
 				.attr("language", function(d) {return d.name;})
 				.on("mouseover", function(d) {
+					if (d.frequency === 1) {
+						tooltext = " manuscript";
+					} else {
+						tooltext = " manuscripts";
+					}
 					d3.select("#peopletooltip")
 					.style("visibility", "visible")
 					.style("top", function() { return(d3.event.pageY - 50) + "px"; })
 					.style("left", function() {return(d3.event.pageX - 100) + "px"; })
-					.html(d.name + ": " + d.frequency +" manuscripts")
+					.html(d.name + ": " + d.frequency + tooltext)
 				})
 				.on("mouseout", function() {d3.select("#peopletooltip").style("visibility", "hidden")});
 

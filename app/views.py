@@ -36,6 +36,8 @@ def homepage():
 				
 				if allPlace.place_name not in placedict:
 					placedict[allPlace.place_name] = {'center': {'lat': allPlace.lat, 'lng': allPlace.lon}, 'count': 1, 'id': allPlace.id}
+					lats = lats + allPlace.lat
+					lons = lons + allPlace.lon
 				else:
 					placedict[allPlace.place_name]['count'] += 1
 					lats = lats + allPlace.lat
@@ -173,41 +175,66 @@ def ms_view(idno):
 	"""Page view for individual MS"""
 	
 	pagems = models.manuscript.query.get(idno)
+	
+	
+	#pagedict: dictionary of nodes and links in a graph centered on the MS; to be used for vis; pagemsid to be used for vis
+	pagemsid = '0_' + str(pagems.id)
+	pagedict = {'nodes': [{"name": pagems.shelfmark, "group": 0, "role": 'manuscript', "dbkey": pagems.id, 'id': pagemsid}], 'links': []}
 
-	#pagedict: dictionary of nodes and links in a graph centered on the MS; to be used for vis
-	pagedict = {'nodes': [{"name": pagems.shelfmark, "group": 0, "role": 'manuscript', "dbkey": pagems.id}], 'links': []}
-	index = 1
+
+	#temporary holder to prevent duplicate entries
+	#first get all relationships, and put them all into the holder, with one record per person
+	person_holder = {}
 	for person_rel in pagems.assoc_people:
-		pagedict['nodes'].append({"name": person_rel.person.name_display, "group": 1,
-		 "role": person_rel.assoc_type, "dbkey": person_rel.person.id})
-		pagedict['links'].append({"source": index, "target": 0, "value": 10})
-		index +=1
+		personid = '1_' + str(person_rel.person.id)
+		if personid not in person_holder:
+			person_holder[personid] = {"name": person_rel.person.name_display, "group": 1,
+		 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid}
+		else:
+			person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.assoc_type
+		
+	#then add each person in the holder to the pagedict
+	for person in person_holder:
+		pagedict['nodes'].append(person_holder[person])
+		pagedict['links'].append({"source": person, "target": pagemsid, "value": 10})
+
 
 	for place_rel in pagems.places:
-		pagedict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id})
-		pagedict['links'].append({"source": index, "target": 0, "value": 10})
-		index +=1
+		placeid = '2_' + str(place_rel.id)
+		pagedict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id, 'id': placeid})
+		pagedict['links'].append({"source": placeid, "target": pagemsid, "value": 10})
 
-	for exdoc in pagems.treatments:
-		pagedict['nodes'].append({'name': exdoc.doc_title, 'group': 4, 'role': 'citing article', 'dbkey': exdoc.id})
-		pagedict['links'].append({'source': index, 'target': 0, 'value': 10})
-		index +=1
+
+	for ms_watermark in pagems.watermarks:
+		watermarkid = '3_' + str(ms_watermark.id)
+		pagedict['nodes'].append({"name": ms_watermark.name  + ' (watermark)', "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
+		pagedict['links'].append({"source": watermarkid, "target": pagemsid, "value": 10})
+
 
 	#separate, preliminary placement of orgs into holder dict to account for and prevent duplicate entities
-	holder = {}
+	org_holder = {}
 	for org_assoc in pagems.orgs:
-		if org_assoc.org_id in holder:
-			holder[org_assoc.org_id]['role'] = holder[org_assoc.org_id]['role'] + ', ' + org_assoc.relationship
+		orgid = '4_'+ str(org_assoc.org_id)
+		if orgid not in org_holder:
+			org_holder[orgid] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship, 'dbkey': org_assoc.org_id, 'id': orgid}
 		else:
-			holder[org_assoc.org_id] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship}
+			org_holder[orgid]['role'] = org_holder[orgid]['role'] + ', ' + org_assoc.relationship
 
-	for item in holder:
-		pagedict['nodes'].append(holder[item])
-		pagedict['links'].append({'source': index, 'target': 0, 'value': 10})
-		index +=1
+	for org in org_holder:
+		pagedict['nodes'].append(org_holder[org])
+		pagedict['links'].append({'source': org, 'target': pagemsid, 'value': 10})
+
+
+
+	for exdoc in pagems.treatments:
+		exdocid = '5_' + str(exdoc.id)
+		pagedict['nodes'].append({'name': exdoc.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': exdoc.id, 'id': exdocid})
+		pagedict['links'].append({'source': exdocid, 'target': pagemsid, 'value': 10})
+
 
 	#in order to avoid treating multiple relationships as relationships with multiple people,
 	#this retrieves all people in this layer and sends the view a dict of {person_id: {'name': '', 'role': ''}}
+	#this is for the table of people, not the graph
 	relat_people = {}
 	for person_assoc in pagems.assoc_people:
 		if person_assoc.person_id not in relat_people:
@@ -218,12 +245,9 @@ def ms_view(idno):
 			relat_people[person_assoc.person_id]['roles'] = relat_people[person_assoc.person_id]['roles'] + ', ' + person_assoc.assoc_type
 
 
-	#if pagems.publisher
-	#publisher not yet implemented, but need to add
-	#print(pagedict)
 
 	graphobj = json.dumps(pagedict)
-	#graphobj = jsonify(pagedict)
+
 	
 	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, graphsend=graphobj)
 
@@ -336,93 +360,174 @@ def ex_work_view(exworkid):
 @app.route('/sendjson', methods = ['GET'])
 def send_json():
 	#return JSON of relationships, to expand and re-render graphs
+
+	##Final word (1/24/2017): Now using unique IDs for nodes and referring to these in link arrays.  
+	##Since the view script eliminates duplicate nodes/links and d3 resolves with existing ones,
+	##it's okay to send back the origin node.  In fact, it should be included, since this function will 
+	##be called by entity view pages to initialize graphs. 
 	valuemap = {'manuscript': models.manuscript, 'person': models.person, 'watermark': models.watermark,
 	 'place': models.place, 'org': models.organization, 'exdoc': models.external_doc}
 	table = request.args.get('entity')
 	ent_id = request.args.get('id')
+	
 	result = valuemap[table].query.get(ent_id)
+	
+	#'initial' flags whether function is being called in the controller or through an HTTP request.
+	#if 'state' is in request, it's HTTP to expand the graph, return HTTP JSON response
+	#otherwise, it's within the controller; dump JSON to string and pass
+	if 'state' in request.args:
+		initial = False
+	else:
+		initial = True
+
 
 	returndict = {'nodes': [], 'links': []}
-	index = 1
-	#index starts from 0; on transferring to vis, will have to append and adjust indices
+
+
 	if table == 'manuscript':
-		#this function was called from a manuscript; send back MS and related entities
-		#don't need the manuscript itself; calling item is already in the graph and doesn't need to be added
-		#actually, this is contextually dependent; need to figure out a way to deal
+		resultid = '0_' + str(result.id)
+		#this function was called from a manuscript; send back related entities
+		returndict['nodes'].append({"name": result.shelfmark, "group": 0, "role": 'manuscript', "dbkey": result.id, 'id': resultid})
+
+		person_holder = {}
 		for person_rel in result.assoc_people:
-			returndict['nodes'].append({'name': person_rel.person.name_display, 'group': 1,
-			 'role': person_rel.assoc_type, "dbkey": person_rel.person.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
+			personid = '1_' + str(person_rel.person.id)
+			if personid not in person_holder:
+				person_holder[personid] = {"name": person_rel.person.name_display, "group": 1,
+			 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid}
+			else:
+				person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.assoc_type
+			
+		#then add each person in the holder to the pagedict
+		for person in person_holder:
+			returndict['nodes'].append(person_holder[person])
+			returndict['links'].append({"source": person, "target": resultid, "value": 10})
+
 
 		for place_rel in result.places:
-			returndict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id})
-			returndict['links'].append({"source": index, "target": 0, "value": 10})
-			#print place_rel.place_name, place_rel.lat, place_rel.lon
-			index +=1
+			placeid = '2_' + str(place_rel.id)
+			returndict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id, 'id': placeid})
+			returndict['links'].append({"source": placeid, "target": resultid, "value": 10})
 
-		for wm in result.watermarks:
-			returndict['nodes'].append({'name': wm.name, 'group': 3, 'role': 'watermark', 'dbkey': wm.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
-		
+
+		for ms_watermark in result.watermarks:
+			watermarkid = '3_' + str(ms_watermark.id)
+			returndict['nodes'].append({"name": ms_watermark.name, "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
+			returndict['links'].append({"source": watermarkid, "target": resultid, "value": 10})
+
+
+		#separate, preliminary placement of orgs into holder dict to account for and prevent duplicate entities
+		org_holder = {}
+		for org_assoc in result.orgs:
+			orgid = '4_'+ str(org_assoc.org_id)
+			if orgid not in org_holder:
+				org_holder[orgid] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship, 'dbkey': org_assoc.org_id, 'id': orgid}
+			else:
+				org_holder[orgid]['role'] = org_holder[orgid]['role'] + ', ' + org_assoc.relationship
+
+		for org in org_holder:
+			returndict['nodes'].append(org_holder[org])
+			returndict['links'].append({'source': org, 'target': resultid, 'value': 10})
+
+
+
 		for exdoc in result.treatments:
-			returndict['nodes'].append({'name': exdoc.doc_title, 'group': 4, 'role': 'citing article', 'dbkey': exdoc.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
+			exdocid = '5_' + str(exdoc.id)
+			returndict['nodes'].append({'name': exdoc.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': exdoc.id, 'id': exdocid})
+			returndict['links'].append({'source': exdocid, 'target': resultid, 'value': 10})
+
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
 
 
-		return jsonify(returndict)
 
 	elif table == 'person':
-		returndict['nodes'].append({'name': result.name_display, 'group': 1, 'role': '', 'dbkey': result.id})
+		resultid = '1_' + str(result.id)
+		returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid})
 
 		for ms_rel in result.ms_relations:
-			returndict['nodes'].append({'name': models.manuscript.query.get(ms_rel.ms_id).shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
-
-		return jsonify(returndict)
-
-	elif table == 'watermark':
-		returndict['nodes'].append({'name': ('Watermark '+ result.name), 'group': 3, 'role': 'watermark', 'dbkey': result.id})
+			ms_rel_id = '0_' + str(ms_rel.ms_id)
+			returndict['nodes'].append({'name': models.manuscript.query.get(ms_rel.ms_id).shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.ms_id, 'id': ms_rel_id})
+			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
 		
-		for ms_rel in result.mss:
-			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
-
-		return jsonify(returndict)
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
 
 	elif table == 'place':
-		returndict['nodes'].append({'name': (result.place_name), 'group': 2, 'role': 'place', 'dbkey': result.id})
+		resultid = '2_' + str(result.id)
+		returndict['nodes'].append({'name': (result.place_name), 'group': 2, 'role': 'place', 'dbkey': result.id, 'id': resultid})
 		
 		for ms_rel in result.mss:
-			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id})
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
+			ms_rel_id = '0_' + str(ms_rel.id)
+			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id, 'id': ms_rel_id})
+			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
 
-		return jsonify(returndict)
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
+
+
+	elif table == 'watermark':
+		resultid = '3_' + str(result.id)
+		returndict['nodes'].append({'name': result.name + ' (watermark)', 'group': 3, 'role': 'watermark', 'dbkey': result.id, 'id': resultid})
+		
+		for ms_rel in result.mss:
+			ms_rel_id = '0_' + str(ms_rel.id)
+			#is this right?  Keep an eye out here if there are errors
+			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id, 'id': ms_rel_id})
+			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
+
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
+
+
 
 	elif table == 'org':
-		returndict['nodes'].append({'name': (result.name), 'group': 4, 'role': 'organization', 'dbkey': result.id})
+		resultid = '4_' + str(result.id)
+		returndict['nodes'].append({'name': (result.name), 'group': 4, 'role': 'organization', 'dbkey': result.id, 'id': resultid})
 		
 		holder = {}
 		for ms_rel in result.ms_relations:
-			if ms_rel.ms_id in holder:
-				holder[ms_rel.ms_id]['role'] = holder[ms_rel.ms_id]['role'] + ', ' + ms_rel.relationship
+			ms_rel_id = '0_' + str(ms_rel.ms_id)
+			if ms_rel_id not in holder:
+				holder[ms_rel_id] = {'name': ms_rel.ms.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.ms_id, 'id': ms_rel_id}
 			else:
-				holder[ms_rel.ms_id] = {'name': ms_rel.ms.shelfmark, 'group': 0, 'role': ms_rel.relationship}
+				holder[ms_rel_id]['role'] = holder[ms_rel_id]['role'] + ', ' + ms_rel.relationship
 
-		for item in holder:
-			returndict['nodes'].append(holder[item])
-			returndict['links'].append({'source': index, 'target': 0, 'value': 10})
-			index +=1
+		for ms in holder:
+			returndict['nodes'].append(holder[ms])
+			returndict['links'].append({'source': ms, 'target': resultid, 'value': 10})
 
-		return jsonify(returndict)
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
 
-	else:
-		raise NotImplementedError('Entity not yet implemented')
+	elif table == 'exdoc':
+		resultid = '5_' + str(result.id)
+		returndict['nodes'].append({'name': result.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': result.id, 'id': resultid})
+
+
+
+		for ms in result.mss:
+			ms_id = '0_' + str(ms.id)
+			print ms_id
+			returndict['nodes'].append({'name': ms.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms.id, 'id': ms_id})
+			returndict['links'].append({'source': ms_id, 'target': resultid, 'value': 10})
+		print returndict
+		
+		if initial == False:
+			return jsonify(returndict)
+		else:
+			return json.dumps(returndict)
+
 
 @app.route('/sendcontentsjson', methods=['GET'])
 def contents_json():

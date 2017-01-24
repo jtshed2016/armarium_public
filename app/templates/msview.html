@@ -233,95 +233,207 @@
 <!--canvases for d3 visualizations-->
 <div class="section" id="relationvis">
 </div>
-<script src="static/d3.min.js"></script>
+<script src="static/d3.v4.min.js"></script>
 <script>
+//tablelookup and jsonEndPoint for getNewNodes function
+//tablelookup has ints that correspond to DB entities; together with dbkey, these can uniquely ID a node
+var tablelookup = {0: 'manuscript', 1: 'person', 2: 'place', 3: 'watermark', 4: 'org',
+5: 'exdoc', 6: 'subject', 7: 'publisher'};
 
-var width = 490,
-    height = 250;
+var endpointPath = '/sendjson'
 
-var color = d3.scale.category20();
+var width = 900,
+    height = 450;
 
-var force = d3.layout.force()
-    .charge(-120)
-    .linkDistance(30)
-    .size([width, height]);
+//variables for forces in graph:
+//forceStrength -- level of attraction (or repulsion, if negative)
+var forceStrength = -80
+//maximum distance between two nodes
+var maximumDistance = 150
+//minimum distance between two nodes
+var minimumDistance = 40
 
 var svg = d3.select("#relationvis").append("svg")
     .attr("id", "graphcanvas")
     .attr("width", width)
     .attr("height", height);
 
-var msGraph = {{ graphsend|safe }}
-/*for (element in msGraph) {
-  for (point in msGraph[element]) {
-    console.log(msGraph[element][point])
+var graph = {{ graphsend|safe }}
+
+
+var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+    .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+
+  var link = svg.append("g")
+    .attr("class", "links")
+  .selectAll("line")
+    .data(graph.links, function(d) { return d.source.id + '-' + d.target.id})
+    .enter().append("line")
+    .style("stroke-width", function(d) { return Math.sqrt(d.value)});
+
+  var node = svg.append("g")
+    .attr("class", "nodes")
+  .selectAll("circle")
+    .data(graph.nodes, function(d) {return d.id})
+    .enter()
+    .append("circle")
+    .attr("r", 5)
+    .attr("fill", function(d) {return color(d.group); })
+    .attr("id", function(d) {return d.id; })
+    .attr("onclick", "getNewNodes(this)")
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));
+
+  var labels = svg.selectAll("text.labels")
+    .data(graph.nodes)
+    .enter().append("text")
+    //.attr("text-anchor", "end")
+    .attr("dx", -10)
+    .attr("dy", ".35em")
+    .attr("class", "labels")
+    .attr("fill", "black")
+    .text(function(d) { return d.name; });
+  
+
+  simulation
+    .nodes(graph.nodes)
+    .on("tick", ticked);
+  
+  simulation.force("link")
+    .links(graph.links)
+
+  function ticked() {
+    link
+      .attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; })
+
+    node
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+
+    labels
+      .attr("transform", function(d) { return "translate(" + (d.x + 5).toString() + "," + (d.y).toString() + ")";});
   }
 
-} */
+ function dragstarted(d) {
+  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+ }
 
-/*d3.json(msGraph, function(error, graph) {
-  if (error) throw error;
-  console.log(msGraph);
-*/
-graph = msGraph
-console.log(msGraph);
-  force
-      .nodes(graph.nodes)
-      .links(graph.links)
-      .linkStrength(.01) //function(links) { return (links.value/20)};);
-      .start();
+function dragged(d) {
+  d.fx = d3.event.x;
+  d.fy = d3.event.y;
+}
 
-  var link = svg.selectAll(".link")
-      .data(graph.links)
-    .enter().append("line")
-      .attr("class", "link")
-      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+function dragended(d) {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
 
-  var node = svg.selectAll(".node")
-      .data(graph.nodes)
-    .enter().append("circle")
-      .attr("class", "node")
-      .attr("r", 5)
-      .style("fill", function(d) { return color(d.group); })
-      .call(force.drag)
-      .attr("name", function(d) {return d.name })
-      .attr("group", function(d) {return d.group })
-      .attr("dbkey", function(d) {return d.dbkey })
-      .attr("onclick", "getNewNodes(this)");
 
-  var texts = svg.selectAll("text.label")
-  	.data(graph.nodes)
-  	.enter().append("text")
-  	.attr("class", "label")
-  	.attr("fill", "black")
-  	.text(function(d) { return d.name; });
-  node.append("text")
-  	.attr("dx", 12)
-  	.attr("dy", ".35em")
-      .text(function(d) { return d.name; });
+function nodeExists(currNode) {
+  //for use with array.find -- returns "true" if node already exists in graph array
+  return currNode.id === this.id;
+}
 
-  force.on("tick", function() {
-    link.attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+function linkExists(currLink) {
+  //for use with array.find -- returns "true" if link or inverse already exists in graph array
+  //console.log('current source: ', currLink.source);
+  //console.log('current link ID (under iteration): ', currLink.source.id);
 
-    node.attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
+  return ((currLink.source.id === this.source) && (currLink.target.id === this.target)
+    ||
+    (currLink.source.id === this.target) && (currLink.target.id === this.source))
+}
 
-    texts.attr("transform", function(d) {
-        return "translate(" + (d.x +5) + "," + d.y + ")";
-    });
-  });
-//});
+
+function getNewNodes(currNode) {
+  idArgs = currNode.id.split('_')
+  entity = tablelookup[idArgs[0]]
+  dbID = idArgs[1]
+//sends REQUEST to JSON endpoint to get new subgraph associated with node, calls update function
+//destURL -- change to send entity name and ID when integrated
+destURL = endpointPath + '?entity=' + entity + '&id=' + dbID + '&state=add'
+d3.json(destURL, function (newGraph) {
+  update(newGraph);
+})
+}
+
+function update(newData) {
+  //takes new data, checks to see if nodes/links already exist, adds if necessary, re-renders graph
+  for (x in newData.nodes) {
+    //check for existing nodes
+    if (graph.nodes.find(nodeExists, newData.nodes[x]) === undefined) {
+      graph.nodes.push(newData.nodes[x])
+      //if a node isn't in the graph, "undefined" is returned and the new node is pushed to array
+    }
+    
+
+  }
+  for (y in newData.links) {
+    //check for existing links
+    if (graph.links.find(linkExists, newData.links[y]) === undefined) {
+      //if a link isn't in the graph, "undefined" is returned and the new link is pushed to array
+      newLinkSource = graph.nodes.find( function(oldNode) { return oldNode.id === this.source}, newData.links[y]);
+      newLinkTarget = graph.nodes.find( function(oldNode) { return oldNode.id === this.target}, newData.links[y]);
+      graph.links.push({'source': newLinkSource, 'target': newLinkTarget, 'value': 10})
+    }
+  }
+
+  //update nodes, links, and labels with new data and merge
+  node = node.data(graph.nodes, function(d) { return d.id;});
+  node.exit().remove();
+  node = node.enter()
+  .append("circle")
+  .attr("r", 5)
+  .attr("fill", function(d) { return color(d.group)})
+  .attr("id", function(d) {return d.id; })
+  .attr("onclick", "getNewNodes(this)")
+  .call(d3.drag()
+  .on("start", dragstarted)
+  .on("drag", dragged)
+  .on("end", dragended))
+  .merge(node);
+
+
+  link = link.data(graph.links, function(d) { return d.source.id + "-" + d.target.id; });
+  link.exit().remove();
+  link = link.enter().append("line").merge(link).style("stroke-width", function(d) { return Math.sqrt(d.value)});
+
+  labels = labels.data(graph.nodes);
+  labels.exit().remove()
+  labels = labels.enter()
+  .append("text")
+    .attr("dx", -10)
+    .attr("dy", ".35em")
+    .attr("class", "labels")
+    .attr("fill", "black")
+    .text(function(d) {return d.name})
+    .merge(labels);
+
+//restart simulation with new data
+  simulation
+    .nodes(graph.nodes)
+  .force("link").links(graph.links);
+  simulation
+    .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .alpha(1).restart();
+}
 
 </script>
-
-<div class="section" id="textvis">
-</div>
-
-
-
 
 
 </div>

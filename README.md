@@ -1,6 +1,6 @@
 # armarium_public - Robbins Collection Manuscript Application
 ##Fresh Installation Instructions
-##v.3.1, 14 December 2016
+##v.3.2, 24 January 2017
 
 ##Introduction
 These instructions are for a clean installation and activation of the Robbins Collection manuscript application (Jordan Shedlock’s MIMS final project from 2016).  This is a Python Flask application using a SQLite3 database, running through an Apache2 server via WSGI.  This repository contains a clean version that can be easily cloned and installed.
@@ -32,7 +32,7 @@ The following Python libraries are required.  They can be installed using pip an
 * fastpbkdf2  
 
 
-The application’s visualizations require the d3.js library, placed in the static folder and named d3.min.js .  This is already included in the GitHub repository.  
+The application’s visualizations require the d3.js version 4 library, placed in the static folder and named d3.v4.min.js .  This is already included in the GitHub repository.  
 
 ##Server creation and setup
 The following instructions are tested on an Ubuntu 14.04.5 virtual machine hosted by Digital Ocean.  
@@ -45,7 +45,7 @@ After setting up a server or virtual machine of your preference, do the followin
 At this point, you can add a static index.html file and check that server is working if desired.
 
 Install Ubuntu dependencies:  
-apt-get install python-pip python-dev libapache2-mod-wsgi build-essential libffi-dev libssl-dev git
+`apt-get install python-pip python-dev libapache2-mod-wsgi build-essential libffi-dev libssl-dev git`
 
 Change directory to web folder and clone repository:  
 `cd /var/www/`  

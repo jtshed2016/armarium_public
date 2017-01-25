@@ -251,6 +251,9 @@ li {
 	text-align: center;
 }
 
+#graphtoggle {
+	text-align: center;
+}
 /* for d3 histogram vis (front page) */
 
 .bar { 
@@ -291,9 +294,5 @@ svg text {
 	max-width: 40%;
 	vertical-align: 150%;
 }
-/*
-#graphcanvas {
-	max-width: 50%
-	max-height: 100%;
-}
-*/
+
+

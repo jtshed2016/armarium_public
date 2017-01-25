@@ -412,7 +412,7 @@ def send_json():
 
 		for ms_watermark in result.watermarks:
 			watermarkid = '3_' + str(ms_watermark.id)
-			returndict['nodes'].append({"name": ms_watermark.name, "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
+			returndict['nodes'].append({"name": ms_watermark.name + " (watermark)", "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
 			returndict['links'].append({"source": watermarkid, "target": resultid, "value": 10})
 
 

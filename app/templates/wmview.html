@@ -15,7 +15,7 @@
 {% for ms in mainwm.mss %}
 	<tr>
 		<td><a href="ms{{ ms.id }}">{{ ms.shelfmark }}</a> </td>
-		<td>{{ ms.titles.filter_by(title_type='main').first() }}</td>
+		<td>{{ ms.titles.filter_by(title_type='main').first().title_text }}</td>
 		<td>
 		{% for place in ms.places %}
 		<a href="{{ 'place' + (place.id|string) }}">{{ place.place_name }}</a>

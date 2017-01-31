@@ -62,17 +62,20 @@ h1, h2 {
 h3, h4, h5, h6 {
 	font-family: "Times New Roman";
 	color: #3F3E3A;
-	margin-left: .5em;
 }
 
 h3 {
 	font-size: 1.5em;
-	margin-left: .5em;
 }
 
 h4 {
 	font-size: 1.2em;
 }
+
+div#wrapper h3, h4 {
+	margin: .5em;
+}
+
 
 p, td, th {
 	color: #3F3E3A;
@@ -203,11 +206,17 @@ table, th, td {
 	border-color: #C5C3BC;
 	border-collapse: collapse;
 	padding: 3px;
+	text-align: left;
 	/*margin: 2px;*/
 }
 
 .contentstable {
 	margin: .75em;
+	width: 100%;
+}
+
+#pagelink {
+	text-align: center;
 }
 
 th *{
@@ -253,6 +262,16 @@ li {
 
 #graphtoggle {
 	text-align: center;
+	display: inline-block;
+	max-width: 50%;
+	vertical-align: top;
+	margin: .75em;
+	padding: .5em;
+}
+
+#nodeinfo {
+	display: inline-block;
+	max-width: 50%;
 }
 /* for d3 histogram vis (front page) */
 

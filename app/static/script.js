@@ -19,6 +19,226 @@ function toggleLabels() {
 	};
 };
 
+function populateGraphTip(inputNode) {
+  //inputNode: circle element from vis
+  //focusNode: Javascript object representing graph node
+  focusNode = graph.nodes.find(function(currNode) {return currNode.id === this.id} ,inputNode);
+  holderDiv = document.getElementById("nodeinfo");
+  holderTable = holderDiv.getElementsByTagName('table')[0];
+  holderDiv.removeChild(holderTable);
+  
+  /*
+  console.log(focusNode);
+  */
+
+  newTable = document.createElement("TABLE");
+  
+  switch( focusNode.group) {
+    case 0:
+    //manuscript
+      titleRow = document.createElement("TR");
+      titleHead = document.createElement("TH");
+      titleHead.innerHTML = "Title";
+      titleRow.appendChild(titleHead);
+      titleText = document.createElement("TD");
+      titleText.innerHTML = focusNode.title;
+      titleRow.appendChild(titleText);
+
+      yearRow = document.createElement("TR");
+      yearHead = document.createElement("TH");
+      yearHead.innerHTML = "Date";
+      yearRow.appendChild(yearHead);
+      yearText = document.createElement("TD");
+      yearText.innerHTML = focusNode.date;
+      yearRow.appendChild(yearText);
+
+
+      authorRow = document.createElement("TR");
+      authorHead = document.createElement("TH");
+      authorHead.innerHTML = "Author";
+      authorRow.appendChild(authorHead);
+      authorText = document.createElement("TD");
+      authorText.innerHTML = focusNode.author;
+      authorRow.appendChild(authorText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(titleRow);
+      newTable.appendChild(authorRow);
+      newTable.appendChild(yearRow);
+      newTable.appendChild(urlRow);
+
+      break;
+    case 1:
+    //person
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Name";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      yearRow = document.createElement("TR");
+      yearHead = document.createElement("TH");
+      yearHead.innerHTML = "Dates";
+      yearRow.appendChild(yearHead);
+      yearText = document.createElement("TD");
+      yearText.innerHTML = focusNode.date;
+      yearRow.appendChild(yearText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(yearRow);
+      newTable.appendChild(urlRow);
+      break;
+
+    case 2:
+    //place
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Name";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(urlRow);
+      break;
+    case 3:
+    //watermark
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Name";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      briqUrlRow = document.createElement("TR");
+      briqUrlText = document.createElement("TD");
+      briqUrlText.colSpan = "2";
+      briqUrlText.id = "pagelink";
+      briqUrlLink = document.createElement("A");
+      briqUrlLink.href = focusNode.briq_url;
+      briqUrlLink.text = "View Watermark (Briquet Online)";
+      briqUrlText.appendChild(briqUrlLink);
+      briqUrlRow.appendChild(briqUrlText);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(urlRow);
+      newTable.appendChild(briqUrlRow);
+
+      break;
+    case 4:
+    //organization
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Name";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(urlRow);
+      break;
+    case 5:
+    //external doc
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Title";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      authorRow = document.createElement("TR");
+      authorHead = document.createElement("TH");
+      authorHead.innerHTML = "Author";
+      authorRow.appendChild(authorHead);
+      authorText = document.createElement("TD");
+      authorText.innerHTML = focusNode.author;
+      authorRow.appendChild(authorText);
+
+      dateRow = document.createElement("TR");
+      dateHead = document.createElement("TH");
+      dateHead.innerHTML = "Date";
+      dateRow.appendChild(dateHead);
+      dateText = document.createElement("TD");
+      dateText.innerHTML = focusNode.dates;
+      dateRow.appendChild(dateText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(authorRow);
+      newTable.appendChild(dateRow);
+      newTable.appendChild(urlRow);
+
+      break;
+  }
+
+  holderDiv.appendChild(newTable);
+}
+
+
 var tablelookup = {0: 'manuscript', 1: 'person', 2: 'place', 3: 'watermark', 4: 'org',
 5: 'exdoc', 6: 'subject', 7: 'publisher'};
 
@@ -120,16 +340,17 @@ function update(newData) {
   node.exit().remove();
   node = node.enter()
   .append("circle")
+  .attr("class", "nodes")
   .attr("r", 5)
   .attr("fill", function(d) { return color(d.group)})
   .attr("id", function(d) {return d.id; })
+  .attr("onmouseover", "populateGraphTip(this)")
   .attr("onclick", "getNewNodes(this)")
   .call(d3.drag()
   .on("start", dragstarted)
   .on("drag", dragged)
   .on("end", dragended))
   .merge(node);
-
 
   link = link.data(graph.links, function(d) { return d.source.id + "-" + d.target.id; });
   link.exit().remove();
@@ -154,4 +375,7 @@ function update(newData) {
     .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .alpha(1).restart();
+
+
 }
+

@@ -238,7 +238,7 @@
 
 //graph variables and update functions moved to script.js
 
-var width = 900,
+var width = 800,
     height = 450;
 
 
@@ -266,14 +266,16 @@ var simulation = d3.forceSimulation()
     .style("stroke-width", function(d) { return Math.sqrt(d.value)});
 
   var node = svg.append("g")
-    .attr("class", "nodes")
+    
   .selectAll("circle")
     .data(graph.nodes, function(d) {return d.id})
     .enter()
     .append("circle")
+	.attr("class", "nodes")
     .attr("r", 5)
     .attr("fill", function(d) {return color(d.group); })
     .attr("id", function(d) {return d.id; })
+    .attr("onmouseover", "populateGraphTip(this)")
     .attr("onclick", "getNewNodes(this)")
     .call(d3.drag()
       .on("start", dragstarted)
@@ -298,7 +300,6 @@ var simulation = d3.forceSimulation()
     .links(graph.links)
 
 
-
 </script>
 
 <div id="graphtoggle">
@@ -308,6 +309,28 @@ var simulation = d3.forceSimulation()
   <input type="radio" name="labeltoggle" value="off">Off
 </form>
 </div>
+
+<div id="nodeinfo">
+  <table>
+    <tr>
+      <th>Title</th>
+      <td></td>
+    </tr>
+    <tr>
+      <th>Author</th>
+      <td></td>
+    </tr>
+    <tr>
+      <th>Year</th>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan=2>Link</td>
+    </tr>
+  </table>
+
+</div>
+
 
 </div>
 {% endblock %}

@@ -176,62 +176,6 @@ def ms_view(idno):
 	
 	pagems = models.manuscript.query.get(idno)
 	
-	
-	#pagedict: dictionary of nodes and links in a graph centered on the MS; to be used for vis; pagemsid to be used for vis
-	pagemsid = '0_' + str(pagems.id)
-	pagedict = {'nodes': [{"name": pagems.shelfmark, "group": 0, "role": 'manuscript', "dbkey": pagems.id, 'id': pagemsid}], 'links': []}
-
-
-	#temporary holder to prevent duplicate entries
-	#first get all relationships, and put them all into the holder, with one record per person
-	person_holder = {}
-	for person_rel in pagems.assoc_people:
-		personid = '1_' + str(person_rel.person.id)
-		if personid not in person_holder:
-			person_holder[personid] = {"name": person_rel.person.name_display, "group": 1,
-		 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid}
-		else:
-			person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.assoc_type
-		
-	#then add each person in the holder to the pagedict
-	for person in person_holder:
-		pagedict['nodes'].append(person_holder[person])
-		pagedict['links'].append({"source": person, "target": pagemsid, "value": 10})
-
-
-	for place_rel in pagems.places:
-		placeid = '2_' + str(place_rel.id)
-		pagedict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id, 'id': placeid})
-		pagedict['links'].append({"source": placeid, "target": pagemsid, "value": 10})
-
-
-	for ms_watermark in pagems.watermarks:
-		watermarkid = '3_' + str(ms_watermark.id)
-		pagedict['nodes'].append({"name": ms_watermark.name  + ' (watermark)', "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
-		pagedict['links'].append({"source": watermarkid, "target": pagemsid, "value": 10})
-
-
-	#separate, preliminary placement of orgs into holder dict to account for and prevent duplicate entities
-	org_holder = {}
-	for org_assoc in pagems.orgs:
-		orgid = '4_'+ str(org_assoc.org_id)
-		if orgid not in org_holder:
-			org_holder[orgid] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship, 'dbkey': org_assoc.org_id, 'id': orgid}
-		else:
-			org_holder[orgid]['role'] = org_holder[orgid]['role'] + ', ' + org_assoc.relationship
-
-	for org in org_holder:
-		pagedict['nodes'].append(org_holder[org])
-		pagedict['links'].append({'source': org, 'target': pagemsid, 'value': 10})
-
-
-
-	for exdoc in pagems.treatments:
-		exdocid = '5_' + str(exdoc.id)
-		pagedict['nodes'].append({'name': exdoc.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': exdoc.id, 'id': exdocid})
-		pagedict['links'].append({'source': exdocid, 'target': pagemsid, 'value': 10})
-
-
 	#in order to avoid treating multiple relationships as relationships with multiple people,
 	#this retrieves all people in this layer and sends the view a dict of {person_id: {'name': '', 'role': ''}}
 	#this is for the table of people, not the graph
@@ -244,10 +188,9 @@ def ms_view(idno):
 		else:
 			relat_people[person_assoc.person_id]['roles'] = relat_people[person_assoc.person_id]['roles'] + ', ' + person_assoc.assoc_type
 
-
-
-	graphobj = json.dumps(pagedict)
-
+	#get node/link relationship data for graph	
+	graph_data = get_info_from_db(pagems.id, 'manuscript')
+	graphobj = json.dumps(graph_data)
 	
 	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, graphsend=graphobj)
 
@@ -357,9 +300,27 @@ def ex_work_view(exworkid):
 
 	return render_template('exworkview.html', work = focuswork)
 
+@app.route('/exdoc<doc_id>', methods=['GET'])
+def ex_doc_view(doc_id):
+
+	return render_template('exdocview.html')
+
+
 @app.route('/sendjson', methods = ['GET'])
 def send_json():
-	#return JSON of relationships, to expand and re-render graphs
+	#Accepts HTTP request with ID and table of a node from a graph vis; passes to get_info_from_db,
+	#returns JSON response
+	table = request.args.get('entity')
+	ent_id = request.args.get('id')
+	result_dict = get_info_from_db(ent_id, table)
+
+	return jsonify(result_dict)
+	
+
+
+def get_info_from_db(ent_id, table):
+	#takes primary key and table name as arguments, returns dictionary of links and nodes to
+	#populate or expand graph visualization
 
 	##Final word (1/24/2017): Now using unique IDs for nodes and referring to these in link arrays.  
 	##Since the view script eliminates duplicate nodes/links and d3 resolves with existing ones,
@@ -367,34 +328,66 @@ def send_json():
 	##be called by entity view pages to initialize graphs. 
 	valuemap = {'manuscript': models.manuscript, 'person': models.person, 'watermark': models.watermark,
 	 'place': models.place, 'org': models.organization, 'exdoc': models.external_doc}
-	table = request.args.get('entity')
-	ent_id = request.args.get('id')
-	
-	result = valuemap[table].query.get(ent_id)
-	
-	#'initial' flags whether function is being called in the controller or through an HTTP request.
-	#if 'state' is in request, it's HTTP to expand the graph, return HTTP JSON response
-	#otherwise, it's within the controller; dump JSON to string and pass
-	if 'state' in request.args:
-		initial = False
-	else:
-		initial = True
 
+
+	result = valuemap[table].query.get(ent_id)
 
 	returndict = {'nodes': [], 'links': []}
 
 
 	if table == 'manuscript':
+		
 		resultid = '0_' + str(result.id)
+		'''
+		result_title = result.titles.filter_by(title_type='main').first().title_text
+		if result.date2 == None:
+			result_datestring = str(result.date1)
+		else:
+			result_datestring = str(result.date1) + '-' + str(result.date2)
+		authorquery = result.assoc_people.filter_by(assoc_type = 'author').first()
+		if authorquery != None:
+			result_author = authorquery.person.name_display
+		else:
+			result_author = ''
+
 		#this function was called from a manuscript; send back related entities
-		returndict['nodes'].append({"name": result.shelfmark, "group": 0, "role": 'manuscript', "dbkey": result.id, 'id': resultid})
+		returndict['nodes'].append({"name": result.shelfmark, "group": 0, "role": 'manuscript', "dbkey": result.id, 'id': resultid,
+			'title': result_title, 'date': result_datestring, 'author': result_author, 'url': url_for('ms_view',idno=result.id ) })
+		'''
+		msdict = return_ms_data(result.id)
+		returndict['nodes'].append(msdict)
 
 		person_holder = {}
 		for person_rel in result.assoc_people:
 			personid = '1_' + str(person_rel.person.id)
 			if personid not in person_holder:
+				if ((person_rel.person.year_1 == None) and (person_rel.person.year_2 == None)):
+					persondates = ''
+				elif ((person_rel.person.year_1 != None) and (person_rel.person.year_2 == None)):
+					persondates = str(person_rel.person.year_1) + '-'
+				elif ((person_rel.person.year_1 == None) and (person_rel.person.year_2 != None)):
+					persondates = str(person_rel.person.year_2) + '-'
+				else:
+					persondates = str(person_rel.person.year_1) + '-' + str(person_rel.person.year_2)
+
+
+				if ((person_rel.person.datetype == None) or (person_rel.person.datetype == 'life')):
+					pass
+				elif person_rel.person.datetype == 'approx':
+					persondates = 'C. ' + persondates
+				elif person_rel.person.datetype == 'profess':
+					persondates = 'Active ' + persondates
+				elif person_rel.person.datetype == 'century':
+					persondates = ''
+					if person_rel.person.year_2 != None:
+						persondates = str(person_rel.person.year_1/100) + '-' + str(person_rel.person.year_2/100) + ' centuries'
+					else:
+						persondates = str(person_rel.person.year_1/100) + ' century'
+
+
+
 				person_holder[personid] = {"name": person_rel.person.name_display, "group": 1,
-			 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid}
+			 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid, 'date': persondates, 'url': url_for('view_person', personid=person_rel.person.id)}
 			else:
 				person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.assoc_type
 			
@@ -406,13 +399,13 @@ def send_json():
 
 		for place_rel in result.places:
 			placeid = '2_' + str(place_rel.id)
-			returndict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id, 'id': placeid})
+			returndict['nodes'].append({"name": place_rel.place_name, "group": 2, "role": place_rel.place_type, "dbkey": place_rel.id, 'id': placeid, 'url': url_for('view_place', placeid = place_rel.id)})
 			returndict['links'].append({"source": placeid, "target": resultid, "value": 10})
 
 
 		for ms_watermark in result.watermarks:
 			watermarkid = '3_' + str(ms_watermark.id)
-			returndict['nodes'].append({"name": ms_watermark.name + " (watermark)", "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid})
+			returndict['nodes'].append({"name": ms_watermark.name + " (watermark " + str(ms_watermark.id) + ")", "group": 3, "role": "watermark", "dbkey": ms_watermark.id, "id": watermarkid, 'url': url_for('view_wm', wmid = ms_watermark.id), 'briq_url': ms_watermark.url})
 			returndict['links'].append({"source": watermarkid, "target": resultid, "value": 10})
 
 
@@ -421,7 +414,7 @@ def send_json():
 		for org_assoc in result.orgs:
 			orgid = '4_'+ str(org_assoc.org_id)
 			if orgid not in org_holder:
-				org_holder[orgid] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship, 'dbkey': org_assoc.org_id, 'id': orgid}
+				org_holder[orgid] = {'name': org_assoc.org.name, 'group': 4, 'role': org_assoc.relationship, 'dbkey': org_assoc.org_id, 'id': orgid, 'url': url_for('org_view', orgid = org_assoc.org_id)}
 			else:
 				org_holder[orgid]['role'] = org_holder[orgid]['role'] + ', ' + org_assoc.relationship
 
@@ -433,71 +426,96 @@ def send_json():
 
 		for exdoc in result.treatments:
 			exdocid = '5_' + str(exdoc.id)
-			returndict['nodes'].append({'name': exdoc.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': exdoc.id, 'id': exdocid})
+			if exdoc.doc_title == '':
+				exdoctitle = exdoc.ex_work.work_title
+			else:
+				exdoctitle = exdoc.doc_title
+
+			returndict['nodes'].append({'name': exdoctitle, 'group': 5, 'role': 'citing article', 'dbkey': exdoc.id, 'id': exdocid, 'dates': exdoc.doc_year, 'author': exdoc.doc_author, 'url': url_for('ex_doc_view', doc_id = exdoc.id)})
 			returndict['links'].append({'source': exdocid, 'target': resultid, 'value': 10})
 
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
+		return returndict
 
 
 
 	elif table == 'person':
 		resultid = '1_' + str(result.id)
-		returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid})
+		if ((result.year_1 == None) and (result.year_2 == None)):
+			persondates = ''
+		elif ((result.year_1 != None) and (result.year_2 == None)):
+			persondates = str(result.year_1) + '-'
+		elif ((result.year_1 == None) and (result.year_2 != None)):
+			persondates = str(result.year_2) + '-'
+		else:
+			persondates = str(result.year_1) + '-' + str(result.year_2)
+
+
+		if ((result.datetype == None) or (result.datetype == 'life')):
+			pass
+		elif result.datetype == 'approx':
+			persondates = 'C. ' + persondates
+		elif result.datetype == 'profess':
+			persondates = 'Active ' + persondates
+		elif result.datetype == 'century':
+			persondates = ''
+			if result.year_2 != None:
+				persondates = str(result.year_1/100) + '-' + str(result.year_2/100) + ' centuries'
+			else:
+				persondates = str(result.year_1/100) + ' century'
+
+
+		returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid, 'date': persondates, 'url': url_for('view_person', personid=result.id)})
+		#returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid})
 
 		for ms_rel in result.ms_relations:
 			ms_rel_id = '0_' + str(ms_rel.ms_id)
-			returndict['nodes'].append({'name': models.manuscript.query.get(ms_rel.ms_id).shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.ms_id, 'id': ms_rel_id})
+			ms_rel_dict = return_ms_data(ms_rel.ms_id)
+
+			returndict['nodes'].append(ms_rel_dict)
 			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
 		
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
+		return returndict
 
 	elif table == 'place':
 		resultid = '2_' + str(result.id)
-		returndict['nodes'].append({'name': (result.place_name), 'group': 2, 'role': 'place', 'dbkey': result.id, 'id': resultid})
+		#returndict['nodes'].append({'name': (result.place_name), 'group': 2, 'role': 'place', 'dbkey': result.id, 'id': resultid})
 		
+		returndict['nodes'].append({"name": result.place_name, "group": 2, "role": "place", "dbkey": result.id, 'id': resultid, 'url': url_for('view_place', placeid = result.id)})
+
 		for ms_rel in result.mss:
 			ms_rel_id = '0_' + str(ms_rel.id)
-			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id, 'id': ms_rel_id})
+
+			ms_rel_dict = return_ms_data(ms_rel.id)
+
+			returndict['nodes'].append(ms_rel_dict)
 			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
 
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
+		return returndict
 
 
 	elif table == 'watermark':
 		resultid = '3_' + str(result.id)
-		returndict['nodes'].append({'name': result.name + ' (watermark)', 'group': 3, 'role': 'watermark', 'dbkey': result.id, 'id': resultid})
+		returndict['nodes'].append({'name': result.name + ' (watermark ' + str(result.id) + ')', 'group': 3, 'role': 'watermark', 'dbkey': result.id, 'id': resultid, 'url': url_for('view_wm', wmid = result.id), 'briq_url': result.url})
 		
 		for ms_rel in result.mss:
 			ms_rel_id = '0_' + str(ms_rel.id)
-			#is this right?  Keep an eye out here if there are errors
-			returndict['nodes'].append({'name': ms_rel.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.id, 'id': ms_rel_id})
+			ms_rel_dict = return_ms_data(ms_rel.id)
+			returndict['nodes'].append(ms_rel_dict)
 			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
 
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
-
+		return returndict
 
 
 	elif table == 'org':
 		resultid = '4_' + str(result.id)
-		returndict['nodes'].append({'name': (result.name), 'group': 4, 'role': 'organization', 'dbkey': result.id, 'id': resultid})
+		returndict['nodes'].append({'name': (result.name), 'group': 4, 'role': 'organization', 'dbkey': result.id, 'id': resultid, 'url': url_for('org_view', orgid = result.id)})
 		
 		holder = {}
 		for ms_rel in result.ms_relations:
 			ms_rel_id = '0_' + str(ms_rel.ms_id)
 			if ms_rel_id not in holder:
-				holder[ms_rel_id] = {'name': ms_rel.ms.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms_rel.ms_id, 'id': ms_rel_id}
+				ms_rel_dict = return_ms_data(ms_rel.ms_id)
+				holder[ms_rel_id] = ms_rel_dict
 			else:
 				holder[ms_rel_id]['role'] = holder[ms_rel_id]['role'] + ', ' + ms_rel.relationship
 
@@ -505,28 +523,49 @@ def send_json():
 			returndict['nodes'].append(holder[ms])
 			returndict['links'].append({'source': ms, 'target': resultid, 'value': 10})
 
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
+		return returndict
 
 	elif table == 'exdoc':
 		resultid = '5_' + str(result.id)
-		returndict['nodes'].append({'name': result.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': result.id, 'id': resultid})
+		#returndict['nodes'].append({'name': result.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': result.id, 'id': resultid})
+	
+		#new:
+		if result.doc_title == '':
+			exdoctitle = result.ex_work.work_title
+		else:
+			exdoctitle = result.doc_title
 
-
+		returndict['nodes'].append({'name': exdoctitle, 'group': 5, 'role': 'citing article', 'dbkey': result.id, 'id': resultid, 'dates': result.doc_year, 'author': result.doc_author, 'url': url_for('ex_doc_view', doc_id = result.id)})
 
 		for ms in result.mss:
 			ms_id = '0_' + str(ms.id)
-			print ms_id
-			returndict['nodes'].append({'name': ms.shelfmark, 'group': 0, 'role': 'manuscript', 'dbkey': ms.id, 'id': ms_id})
+			ms_rel_dict = return_ms_data(ms.id)
+			returndict['nodes'].append(ms_rel_dict)
 			returndict['links'].append({'source': ms_id, 'target': resultid, 'value': 10})
-		print returndict
 		
-		if initial == False:
-			return jsonify(returndict)
-		else:
-			return json.dumps(returndict)
+		return returndict
+
+def return_ms_data(shelf_id):
+	this_ms = models.manuscript.query.get(shelf_id)
+	resultid = '0_' + str(shelf_id)
+
+	authorquery = this_ms.assoc_people.filter_by(assoc_type = 'author').first()
+	if authorquery != None:
+		result_author = authorquery.person.name_display
+	else:
+		result_author = ''
+		
+	result_title = this_ms.titles.filter_by(title_type='main').first().title_text
+
+	if this_ms.date2 == None:
+		result_datestring = str(this_ms.date1)
+	else:
+		result_datestring = str(this_ms.date1) + '-' + str(this_ms.date2)
+
+	msreturndict = {"name": this_ms.shelfmark, "group": 0, "role": 'manuscript', "dbkey": shelf_id, 'id': resultid,
+			'title': result_title, 'date': result_datestring, 'author': result_author, 'url': url_for('ms_view',idno=shelf_id)}
+
+	return msreturndict
 
 
 @app.route('/sendcontentsjson', methods=['GET'])

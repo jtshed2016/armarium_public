@@ -17,14 +17,109 @@
 	{% for doc in work.work_constituents %}
 		<tr>
 			<td>{{ doc.doc_author}}</td>
-			<td>{{ doc.doc_title }}</td>
+			<td><a href="{{url_for('ex_doc_view', doc_id=doc.id)}}">{{ doc.doc_title }}</a></td>
 			<td>{% if doc.doc_volume != None %}{{ doc.doc_volume }}{% endif %}</td>
 			<td>{% if doc.doc_issue != None %}{{ doc.doc_issue }}{% endif %}</td>
 			<td>{{ doc.doc_year}}</td>
-			<td>{% for ms in doc.mss %}<a href="ms{{ms.id}}">{{ms.id}}</a> {% endfor %}</td>
+			<td>{% for ms in doc.mss %}<a href="{{url_for('ms_view', idno = ms.id)}}">{{ms.id}}</a> {% endfor %}</td>
 		</tr>
 	{% endfor %}
 	</table>
+<!--canvas for d3 visualization-->
+<div class="section" id="relationvis">
+</div>
+<script src="static/d3.v4.min.js"></script>
+<script>
+
+//graph variables and update functions moved to script.js
+
+var width = 800,
+    height = 450;
+
+
+var svg = d3.select("#relationvis").append("svg")
+    .attr("id", "graphcanvas")
+    .attr("width", width)
+    .attr("height", height);
+
+var graph = {{ graph|safe }}
+
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+    .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+  var link = svg.append("g")
+    .attr("class", "links")
+  .selectAll("line")
+    .data(graph.links, function(d) { return d.source.id + '-' + d.target.id})
+    .enter().append("line")
+    .style("stroke-width", function(d) { return Math.sqrt(d.value)});
+
+  var node = svg.append("g")
+    
+  .selectAll("circle")
+    .data(graph.nodes, function(d) {return d.id})
+    .enter()
+    .append("circle")
+	.attr("class", "nodes")
+    .attr("r", 5)
+    .attr("fill", function(d) {return color[d.group]; })
+    .attr("id", function(d) {return d.id; })
+    .attr("onmouseover", "populateGraphTip(this)")
+    .attr("onclick", "getNewNodes(this)")
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));
+
+  var labels = svg.selectAll("text.labels")
+    .data(graph.nodes)
+    .enter().append("text")
+    .attr("dx", -10)
+    .attr("dy", ".35em")
+    .attr("class", "labels")
+    .attr("fill", "black")
+    .text(function(d) { return d.name; });
+  
+
+  simulation
+    .nodes(graph.nodes)
+    .on("tick", ticked);
+  
+  simulation.force("link")
+    .links(graph.links)
+
+</script>
+
+  <div id="graphtoggle">
+
+  <form id="labeltoggle">Labels: 
+    <input type="radio" name="labeltoggle" value="on" checked>On
+    <input type="radio" name="labeltoggle" value="off">Off
+  </form>
+  </div>
+
+  <div id="nodeinfo">
+    <table>
+      <tr>
+        <th>Title</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Author</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Year</th>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan=2>Link</td>
+      </tr>
+    </table>
+  </div>
+
 	</div>
 
 {% endblock %}

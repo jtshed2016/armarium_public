@@ -9,7 +9,7 @@
 <tr><td colspan="3"><b><a href="/exwork{{work.id}}">{{ work.work_title }}</a></b></td></tr>
 	{% for doc in work.work_constituents %}
 		<tr>
-			<td>{{ doc.doc_title }}</td>
+			<td><a href="{{url_for('ex_doc_view', doc_id=doc.id)}}">{{ doc.doc_title }}</a></td>
 			<td>{{ doc.doc_author }}</td>
 			<td>{{ doc.doc_year }}</td>
 		</tr>

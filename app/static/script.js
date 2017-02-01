@@ -246,14 +246,48 @@ function populateGraphTip(inputNode) {
       newTable.appendChild(urlRow);
 
       break;
+    case 6:
+    //external work
+      nameRow = document.createElement("TR");
+      nameHead = document.createElement("TH");
+      nameHead.innerHTML = "Title";
+      nameRow.appendChild(nameHead);
+      nameText = document.createElement("TD");
+      nameText.innerHTML = focusNode.name;
+      nameRow.appendChild(nameText);
+
+      pubRow = document.createElement("TR");
+      pubHead = document.createElement("TH");
+      pubHead.innerHTML = "Publisher";
+      pubRow.appendChild(pubHead);
+      pubText = document.createElement("TD");
+      pubText.innerHTML = focusNode.publisher + ', (' + focusNode.location + ')';
+      pubRow.appendChild(pubText);
+
+      urlRow = document.createElement("TR");
+      urlCell = document.createElement("TD");
+      urlCell.colSpan = "2";
+      urlCell.id = "pagelink";
+      urlLink = document.createElement("A");
+      urlLink.href = focusNode.url;
+      urlLink.text = "Link to Page";
+      urlCell.appendChild(urlLink);
+      urlRow.appendChild(urlCell);
+
+      newTable.appendChild(nameRow);
+      newTable.appendChild(pubRow);
+      newTable.appendChild(urlRow);
+      
+      break;    
   }
 
   holderDiv.appendChild(newTable);
 }
 
+//lookup object of colors -- used to send arguments to controller when retrieving from DB to populate graph
+//corresponds to 'valuemap' in get_info_from_db function in views.py
+var tablelookup = {0: 'manuscript', 1: 'person', 2: 'place', 3: 'watermark', 4: 'org', 5: 'exdoc', 6: 'exwork'};
 
-var tablelookup = {0: 'manuscript', 1: 'person', 2: 'place', 3: 'watermark', 4: 'org',
-5: 'exdoc', 6: 'exwork'};
 //assign colors from d3 range so they can be applied consistently across graphs
 color = {0: "#1f77b4", 1: "#aec7e8", 2: "#ff7f0e", 3: "#ffbb78", 4: "#2ca02c", 5: "#98df8a", 6: "#d62728"}
 

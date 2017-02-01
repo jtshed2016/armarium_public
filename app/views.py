@@ -192,18 +192,7 @@ def ms_view(idno):
 	graphobj = json.dumps(graph_data)
 	
 	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, graphsend=graphobj)
-'''
-#this is not being implemented, should be deleted
-@app.route('/search', methods = ['GET', 'POST'])
-def mss_search():
-	#needs lots of work, not yet fully implemented
-	searchform = SearchForm()
-	if searchform.validate_on_submit():
-		searchquery = searchform.searchfield.data
-		results = models.manuscript.query.filter(searchquery in manuscript.summary)
-		#print(results)
-		return render_template('searchresult.html', results =results)
-'''
+
 @app.route('/places', methods = ['GET'])
 def list_places():
 	place_list = models.place.query.all()
@@ -313,12 +302,19 @@ def ex_work_view(exworkid):
 
 	focuswork = models.external_work.query.get(exworkid)
 
-	return render_template('exworkview.html', work = focuswork)
+	graph_data = get_info_from_db(exworkid, 'exwork')
+	graphobj = json.dumps(graph_data)
+
+	return render_template('exworkview.html', work = focuswork, graph = graphobj)
 
 @app.route('/exdoc<doc_id>', methods=['GET'])
 def ex_doc_view(doc_id):
+	focusdoc = models.external_doc.query.get(doc_id)
 
-	return render_template('exdocview.html')
+	graph_data = get_info_from_db(doc_id, 'exdoc')
+	graphobj = json.dumps(graph_data)
+
+	return render_template('exdocview.html', doc = focusdoc, graph = graphobj)
 
 
 @app.route('/sendjson', methods = ['GET'])
@@ -337,12 +333,8 @@ def get_info_from_db(ent_id, table):
 	#takes primary key and table name as arguments, returns dictionary of links and nodes to
 	#populate or expand graph visualization
 
-	##Final word (1/24/2017): Now using unique IDs for nodes and referring to these in link arrays.  
-	##Since the view script eliminates duplicate nodes/links and d3 resolves with existing ones,
-	##it's okay to send back the origin node.  In fact, it should be included, since this function will 
-	##be called by entity view pages to initialize graphs. 
 	valuemap = {'manuscript': models.manuscript, 'person': models.person, 'watermark': models.watermark,
-	 'place': models.place, 'org': models.organization, 'exdoc': models.external_doc}
+	 'place': models.place, 'org': models.organization, 'exdoc': models.external_doc, 'exwork': models.external_work}
 
 
 	result = valuemap[table].query.get(ent_id)
@@ -353,22 +345,7 @@ def get_info_from_db(ent_id, table):
 	if table == 'manuscript':
 		
 		resultid = '0_' + str(result.id)
-		'''
-		result_title = result.titles.filter_by(title_type='main').first().title_text
-		if result.date2 == None:
-			result_datestring = str(result.date1)
-		else:
-			result_datestring = str(result.date1) + '-' + str(result.date2)
-		authorquery = result.assoc_people.filter_by(assoc_type = 'author').first()
-		if authorquery != None:
-			result_author = authorquery.person.name_display
-		else:
-			result_author = ''
 
-		#this function was called from a manuscript; send back related entities
-		returndict['nodes'].append({"name": result.shelfmark, "group": 0, "role": 'manuscript', "dbkey": result.id, 'id': resultid,
-			'title': result_title, 'date': result_datestring, 'author': result_author, 'url': url_for('ms_view',idno=result.id ) })
-		'''
 		msdict = return_ms_data(result.id)
 		returndict['nodes'].append(msdict)
 
@@ -565,7 +542,23 @@ def get_info_from_db(ent_id, table):
 			ms_rel_dict = return_ms_data(ms.id)
 			returndict['nodes'].append(ms_rel_dict)
 			returndict['links'].append({'source': ms_id, 'target': resultid, 'value': 10})
-		
+
+		#add containing work
+		contain_work = result.ex_work
+		contain_work_id = '6_' + str(contain_work.id)
+		returndict['nodes'].append({'name': contain_work.work_title, 'group': 6, 'role': 'external publication', 'dbkey': contain_work.id, 'publisher': contain_work.work_publisher, 'location': contain_work.work_location, 'id': contain_work_id, 'url': url_for('ex_work_view', exworkid = contain_work.id)})
+		returndict['links'].append({'source': contain_work_id, 'target': resultid, 'value': 10})
+
+		return returndict
+
+	elif table == 'exwork':
+		result_id = '6_' + str(result.id)
+		returndict['nodes'].append({'name': result.work_title, 'group': 6, 'role': 'external publication', 'dbkey': result.id, 'publisher': result.work_publisher, 'location': result.work_location, 'id': result_id, 'url': url_for('ex_work_view', exworkid = result.id)})
+
+		for article in result.work_constituents:
+			article_id = '5_' + str(article.id)
+			returndict['nodes'].append({'name': article.doc_title, 'group': 5, 'role': 'citing article', 'dbkey': article.id, 'id': article_id, 'dates': article.doc_year, 'author': article.doc_author, 'url': url_for('ex_doc_view', doc_id = article.id)})
+			returndict['links'].append({'source': article_id, 'target': result_id, 'value': 10})
 		return returndict
 
 def return_ms_data(shelf_id):

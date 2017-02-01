@@ -1,4 +1,3 @@
-
 import os, sys, json, re
 from fastpbkdf2 import pbkdf2_hmac
 
@@ -193,7 +192,8 @@ def ms_view(idno):
 	graphobj = json.dumps(graph_data)
 	
 	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, graphsend=graphobj)
-
+'''
+#this is not being implemented, should be deleted
 @app.route('/search', methods = ['GET', 'POST'])
 def mss_search():
 	#needs lots of work, not yet fully implemented
@@ -203,7 +203,7 @@ def mss_search():
 		results = models.manuscript.query.filter(searchquery in manuscript.summary)
 		#print(results)
 		return render_template('searchresult.html', results =results)
-
+'''
 @app.route('/places', methods = ['GET'])
 def list_places():
 	place_list = models.place.query.all()
@@ -215,12 +215,20 @@ def list_places():
 def view_place(placeid):
 	#show info about a place in conjunction with their relationships with MSS
 	focusplace = models.place.query.get(placeid)
-	return render_template ('placeview.html', location=focusplace, pagetitle=focusplace.place_name + ' in the Robbins Manuscripts')
+
+	graph_data = get_info_from_db(placeid, 'place')
+	graphobj = json.dumps(graph_data)
+
+
+	return render_template ('placeview.html', graph = graphobj, location=focusplace, pagetitle=focusplace.place_name + ' in the Robbins Manuscripts')
 
 @app.route('/person<personid>', methods = ['GET'])
 def view_person(personid):
 	#show info about a person in conjunction with their relationships with MSS
 	focusperson = models.person.query.get(personid)
+
+	graph_data = get_info_from_db(personid, 'person')
+	graphobj = json.dumps(graph_data)
 	
 	#in order to avoid treating multiple relationships as relationships with multiple MSS,
 	#this retrieves all MSS in this layer and sends the view a dict of {ms_id: {'title': '', 'role': ''}}
@@ -233,7 +241,7 @@ def view_person(personid):
 		else:
 			mss[ms_rel.ms_id]['roles'] = mss[ms_rel.ms_id]['roles'] + ', ' + ms_rel.assoc_type
 
-	return render_template('personview.html', person = focusperson, ms_rels = mss, pagetitle = focusperson.name_display + ' in the Robbins Manuscripts')
+	return render_template('personview.html', person = focusperson, ms_rels = mss, graph = graphobj, pagetitle = focusperson.name_display + ' in the Robbins Manuscripts')
 
 @app.route('/people', methods = ['GET'])
 def list_people():
@@ -245,8 +253,11 @@ def list_people():
 def view_wm(wmid):
 	#show info about a watermark, link to Briquet page, graph of use in MSS
 	page_wm = models.watermark.query.get(wmid)
+
+	graph_data = get_info_from_db(wmid, 'watermark')
+	graphobj = json.dumps(graph_data)	
 	
-	return render_template('wmview.html', mainwm = page_wm, pagetitle = page_wm.name + ', ' + str(page_wm.id))
+	return render_template('wmview.html', mainwm = page_wm, graph = graphobj, pagetitle = page_wm.name + ', ' + str(page_wm.id))
 
 @app.route('/watermarks', methods = ['GET'])
 def list_watermarks():
@@ -257,6 +268,7 @@ def list_watermarks():
 		for y in models.watermark.query.filter_by(name=x.name).all():
 			holder.append(y)
 		returnlist.append((x, holder))
+
 	return render_template('wmlist.html', pagetitle='Watermarks', recs = returnlist)
 
 @app.route('/orgs', methods = ['GET'])
@@ -283,8 +295,11 @@ def org_view(orgid):
 			else:
 				otherMSrel[rel.ms_id] = [rel.relationship]
 
+	graph_data = get_info_from_db(orgid, 'org')
+	graphobj = json.dumps(graph_data)
 
-	return render_template('orgview.html', pagetitle=focusorg.name, org=focusorg, suborgs=suborgs,
+
+	return render_template('orgview.html', pagetitle=focusorg.name, org=focusorg, suborgs=suborgs, graph = graphobj,
 	 otherMSrel=otherMSrel)
 
 @app.route('/exworks', methods = ['GET'])
@@ -439,6 +454,7 @@ def get_info_from_db(ent_id, table):
 
 
 	elif table == 'person':
+
 		resultid = '1_' + str(result.id)
 		if ((result.year_1 == None) and (result.year_2 == None)):
 			persondates = ''
@@ -467,12 +483,19 @@ def get_info_from_db(ent_id, table):
 		returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid, 'date': persondates, 'url': url_for('view_person', personid=result.id)})
 		#returndict['nodes'].append({"name": result.name_display, "group": 1, "role": 'person', "dbkey": result.id, 'id': resultid})
 
+		#not bothering with roles in this instance...add related MSS to a holder dict first to avoid multiple nodes from multiple relationships
+		holder = {}
 		for ms_rel in result.ms_relations:
 			ms_rel_id = '0_' + str(ms_rel.ms_id)
-			ms_rel_dict = return_ms_data(ms_rel.ms_id)
 
-			returndict['nodes'].append(ms_rel_dict)
-			returndict['links'].append({'source': ms_rel_id, 'target': resultid, 'value': 10})
+			if ms_rel_id not in holder:
+				holder[ms_rel_id] = return_ms_data(ms_rel.ms_id)
+
+		
+
+		for prelim_ms in holder:
+			returndict['nodes'].append(holder[prelim_ms])
+			returndict['links'].append({'source': holder[prelim_ms]['id'], 'target': resultid, 'value': 10})
 		
 		return returndict
 

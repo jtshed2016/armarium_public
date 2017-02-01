@@ -249,10 +249,6 @@ var svg = d3.select("#relationvis").append("svg")
 
 var graph = {{ graphsend|safe }}
 
-
-var color = d3.scaleOrdinal(d3.schemeCategory20);
-
-
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }))
     .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
@@ -273,7 +269,7 @@ var simulation = d3.forceSimulation()
     .append("circle")
 	.attr("class", "nodes")
     .attr("r", 5)
-    .attr("fill", function(d) {return color(d.group); })
+    .attr("fill", function(d) {return color[d.group]; })
     .attr("id", function(d) {return d.id; })
     .attr("onmouseover", "populateGraphTip(this)")
     .attr("onclick", "getNewNodes(this)")
@@ -299,38 +295,34 @@ var simulation = d3.forceSimulation()
   simulation.force("link")
     .links(graph.links)
 
-
 </script>
 
-<div id="graphtoggle">
+  <div id="graphtoggle">
 
-<form id="labeltoggle">Labels: 
-  <input type="radio" name="labeltoggle" value="on" checked>On
-  <input type="radio" name="labeltoggle" value="off">Off
-</form>
-</div>
+  <form id="labeltoggle">Labels: 
+    <input type="radio" name="labeltoggle" value="on" checked>On
+    <input type="radio" name="labeltoggle" value="off">Off
+  </form>
+  </div>
 
-<div id="nodeinfo">
-  <table>
-    <tr>
-      <th>Title</th>
-      <td></td>
-    </tr>
-    <tr>
-      <th>Author</th>
-      <td></td>
-    </tr>
-    <tr>
-      <th>Year</th>
-      <td></td>
-    </tr>
-    <tr>
-      <td colspan=2>Link</td>
-    </tr>
-  </table>
-
-</div>
-
-
+  <div id="nodeinfo">
+    <table>
+      <tr>
+        <th>Title</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Author</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Year</th>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan=2>Link</td>
+      </tr>
+    </table>
+  </div>
 </div>
 {% endblock %}

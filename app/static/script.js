@@ -1,5 +1,16 @@
+graphViewPaths = ['/ms', '/person', '/place', '/org', '/watermark', '/exwork', '/exdoc']
+
 window.onload = function() {
-	document.getElementById("labeltoggle").addEventListener("change", toggleLabels);
+  /*
+  console.log(window.location.pathname);
+  console.log((window.location.pathname).replace(/[0-9]*$/, ''));
+
+  console.log(graphViewPaths.indexOf((window.location.pathname).replace(/[0-9]*$/, '')));
+  */
+  if (graphViewPaths.indexOf((window.location.pathname).replace(/[0-9]*$/, '')) !== -1) {
+
+	 document.getElementById("labeltoggle").addEventListener("change", toggleLabels);
+  }
 }
 
 function toggleLabels() {
@@ -160,6 +171,8 @@ function populateGraphTip(inputNode) {
       briqUrlLink = document.createElement("A");
       briqUrlLink.href = focusNode.briq_url;
       briqUrlLink.text = "View Watermark (Briquet Online)";
+      briqUrlLink.target = '_blank'
+      briqUrlLink.rel = 'noopener noreferrer'
       briqUrlText.appendChild(briqUrlLink);
       briqUrlRow.appendChild(briqUrlText);
 
@@ -240,7 +253,9 @@ function populateGraphTip(inputNode) {
 
 
 var tablelookup = {0: 'manuscript', 1: 'person', 2: 'place', 3: 'watermark', 4: 'org',
-5: 'exdoc', 6: 'subject', 7: 'publisher'};
+5: 'exdoc', 6: 'exwork'};
+//assign colors from d3 range so they can be applied consistently across graphs
+color = {0: "#1f77b4", 1: "#aec7e8", 2: "#ff7f0e", 3: "#ffbb78", 4: "#2ca02c", 5: "#98df8a", 6: "#d62728"}
 
 //variables for forces in graph:
 //forceStrength -- level of attraction (or repulsion, if negative)
@@ -308,7 +323,7 @@ function getNewNodes(currNode) {
   dbID = idArgs[1]
 //sends REQUEST to JSON endpoint to get new subgraph associated with node, calls update function
 //destURL -- change to send entity name and ID when integrated
-destURL = endpointPath + '?entity=' + entity + '&id=' + dbID + '&state=add'
+destURL = endpointPath + '?entity=' + entity + '&id=' + dbID
 d3.json(destURL, function (newGraph) {
   update(newGraph);
 })
@@ -342,7 +357,7 @@ function update(newData) {
   .append("circle")
   .attr("class", "nodes")
   .attr("r", 5)
-  .attr("fill", function(d) { return color(d.group)})
+  .attr("fill", function(d) { return color[d.group]})
   .attr("id", function(d) {return d.id; })
   .attr("onmouseover", "populateGraphTip(this)")
   .attr("onclick", "getNewNodes(this)")
@@ -375,7 +390,6 @@ function update(newData) {
     .force("charge", d3.forceManyBody().strength(forceStrength).distanceMax(maximumDistance).distanceMin(minimumDistance))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .alpha(1).restart();
-
 
 }
 

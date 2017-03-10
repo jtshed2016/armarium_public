@@ -107,6 +107,20 @@ table, th, td {
 	/*max-width: 50%;*/
 }
 
+.chartchoice {
+	border-color: #1a1aff;
+	border-width: 1px;
+	border-style: solid;
+	border-radius: 5px;
+	margin: .5em;
+
+}
+
+#chartsdisplayed, #chartsnotdisplayed {
+	float: left;
+
+}
+
 #msform {
 	position: relative;
 	left: 20px;
@@ -139,4 +153,9 @@ table, th, td {
 	width: 80%;
 	margin: .5em;
 	height: 4em;
+}
+
+#postbutton {
+	text-align: center;
+	clear: both;
 }

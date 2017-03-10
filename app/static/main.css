@@ -57,6 +57,7 @@ h1, h2 {
 	font-family: "Times New Roman";
 	color: #AA4242;
 	font-style: italic;
+	margin: .25em;
 }
 
 h3, h4, h5, h6 {
@@ -94,8 +95,11 @@ header {
 nav a {
 	background-color: #3F3E3A;
 	color: #FEFAE9;
-	padding-left: .2em;
-	padding-right: .2em;
+	padding-left: .3em;
+	padding-right: .3em;
+	padding-bottom: .2em;
+	padding-top: .2em;
+	border-radius: 2px;
 
 }
 
@@ -105,7 +109,7 @@ nav a {
 	border-width: 2px;
 	border-style: solid;
 	border-color: #C5C3BC;
-	border-radius: 2px;
+	border-radius: 3px;
 	/*height: 100%;*/
 }
 
@@ -216,6 +220,10 @@ table, th, td {
 }
 
 #pagelink {
+	text-align: center;
+}
+
+#colophon {
 	text-align: center;
 }
 

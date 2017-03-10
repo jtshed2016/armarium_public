@@ -52,7 +52,7 @@ Change directory to web folder and clone repository:
 `git clone https://github.com/jtshed2016/armarium_public.git`
 
 
-Edit __init__.py to add your own secret key.  This is required for the security of cookies (used for logging in to edit information).  Recommended method: in Python interpreter, enter the following lines and copy and paste the result into __init__.py.
+Edit `__init__.py` to add your own secret key.  This is required for the security of cookies (used for logging in to edit information).  Recommended method: in Python interpreter, enter the following lines and copy and paste the result into `__init__.py`.
 
 `import os`  
 `os.urandom(24)`  

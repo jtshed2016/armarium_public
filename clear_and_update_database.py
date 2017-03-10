@@ -25,6 +25,27 @@ sourcedict = json.load(sourceobj)
 sourceobj.close()
 
 
+#open file for initial configuration of home page charts, add configuration info to DB
+chartconfigname = os.path.join(relpath, 'app/static/chart_info_config.json')
+chartconfigobj = open(chartconfigname, 'r')
+chartinfo = json.load(chartconfigobj)
+chartconfigobj.close()
+
+for tabledict in chartinfo['tables']:
+	newtable = models.chart(
+		chartname = tabledict['chartname'],
+		title = tabledict['title'],
+		qualifier = tabledict['qualifier'],
+		x_axis_label = tabledict['x_axis_label'],
+		y_axis_label = tabledict['y_axis_label'],
+		urlpath = tabledict['urlpath'],
+		displaytext = tabledict['displaytext'],
+		display = tabledict['display'],
+		displayorder = tabledict['order']
+		)
+	db.session.add(newtable)
+	db.session.commit()
+
 #parse data
 allrecs = data_parse_and_load.load(sourcedict)
 
@@ -34,6 +55,10 @@ for record in allrecs:
 	if record == 'RobbinsMSCould not find valid shelfmark':
 		continue
 	print record
+	if allrecs[record]['format'] == '':
+		thismsformat = 'Unspecified'
+	else:
+		thismsformat = allrecs[record]['format']
 
 	ms = models.manuscript(
 		id = int(allrecs[record]['shelfmark'].split(' ')[2]),

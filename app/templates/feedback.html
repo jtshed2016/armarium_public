@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+
+{% if sent == False %}
+<h3>Feedback</h3>
+<p>Questions or comments about the Robbins Manuscript Exploration Portal?  Noticed an error?  Please feel free to share your thoughts using the form below.</p>
+<form action="" method="post" name="sendfeedback">
+Your Name: <br>
+{{ form.feedback_name }}<br>
+Your E-Mail Address: <br>
+{{ form.feedback_email }}<br>
+Your Comments: <br>
+{{ form.feedback_comment }}<br>
+
+<input type="submit" id="feedbacksubmit" value="Submit">
+</form>
+
+
+
+{% else %}
+<h3>Feedback Submitted!</h3>
+<p>Thank you for writing.</p>
+<a href="{{ url_for('homepage') }}">Home</a>
+
+{% endif %}
+</div>
+
+
+
+{% endblock %}

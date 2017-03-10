@@ -7,25 +7,37 @@ sys.path.append(relpath)
 from flask import render_template, redirect, request, session, url_for
 from flask.json import dumps, jsonify
 from app import app, models, db
-from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm
+from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm, FeedbackForm
 from .data_parse_and_load import load
 from base64 import b64encode, b64decode 
 
 from sqlalchemy import func, distinct
 
-
 @app.route('/')
 def homepage():
+#set variables for map and charts
 	lats = 0
 	lons = 0
 	count = 0
+
 	placedict = {}
 	langdict = {}
 	centdict = {}
+	formatdict = {}
+	supportdict = {'paper': 0, 'parchment': 0, 'papyrus': 0}
+	num_vols_dict = {}
+	scriptdict = {}
+	linedict = {}
+	rulingdict = {}
+	wmsdict = {}
+	orgdict = {}
 
 	
 	allmss = models.manuscript.query.all()
 	
+	#retrieve from the database which charts to show, and accompanying data...this determines what information to retrieve/send
+	chartrecords = models.chart.query.filter_by(display=True).order_by(models.chart.displayorder)
+	chart_include = {chart.chartname for chart in chartrecords}
 	
 	for ms in allmss:
 		count +=1
@@ -39,36 +51,205 @@ def homepage():
 					lons = lons + allPlace.lon
 				else:
 					placedict[allPlace.place_name]['count'] += 1
-					lats = lats + allPlace.lat
-					lons = lons + allPlace.lon
 
+
+		if 'date' in chart_include:
 		#count up manuscripts from each century
-		cent = str(ms.date1/100 +1)[:2]
+			cent = str(ms.date1/100 +1)[:2]
 
-		if cent not in centdict:
-			centdict[cent] = 1
-		else:
-			centdict[cent] += 1
+			if cent not in centdict:
+				centdict[cent] = 1
+			else:
+				centdict[cent] += 1
 
-		#count up manuscripts in each language
-		if ms.ms_language.name not in langdict:
-			langdict[ms.ms_language.name] = {'id': ms.ms_language.id, 'count': 1}
-		else:
-			langdict[ms.ms_language.name]['count'] += 1
+		#count up manuscripts in each language, format
+		if 'language' in chart_include:
+			if ms.ms_language.name not in langdict:
+				langdict[ms.ms_language.name] = {'id': ms.ms_language.id, 'count': 1}
+			else:
+				langdict[ms.ms_language.name]['count'] += 1
 
-	centobj = dumps([{'century': key, 'frequency': centdict[key]} for key in sorted(centdict.keys())])
-	subbedcent = re.sub(r'[\"\' ]', '', centobj)
+		if 'format' in chart_include:
+			if ms.ms_format not in formatdict:
+				formatname = ms.ms_format
+				if ms.ms_format == None:
+					formatname = 'Unspecified'
+				formatdict[ms.ms_format] = {'id': formatname, 'count': 1}
+			else:
+				formatdict[ms.ms_format]['count'] += 1
 
-	avlats = lats/count
-	avlons = lons/count
+		if 'support' in chart_include:
+			for vol in ms.volumes:
+				if vol.support == None:
+					continue
+				for support_type in supportdict:
+					if support_type in vol.support:
+						supportdict[support_type] +=1
 
+		if 'script' in chart_include:
+			ms_scripts = set()
+			#use set to avoid duplicate script counts for multivolume MSS
+			for vol in ms.volumes:
+				for script in vol.scripts:
+					ms_scripts.add(script)
+			for ms_script in ms_scripts:
+				if ms_script.name not in scriptdict:
+					scriptdict[ms_script.name] = {'id': ms_script.id, 'count': 1}
+				else:
+					scriptdict[ms_script.name]['count'] += 1
+
+		if 'lines' in chart_include:
+			ms_lines = set()
+			for vol in ms.volumes:
+				for linesnumber in vol.lines:
+					ms_lines.add(linesnumber.id)
+			for ms_line in ms_lines:
+				if ms_line not in linedict:
+					linedict[ms_line] = 1
+				else:
+					linedict[ms_line] +=1
+
+		if 'ruling' in chart_include:
+			for vol in ms.volumes:
+				ms_rulings = set()
+				for rulingtype in vol.ruling:
+					ms_rulings.add(rulingtype)
+				for rulingmat in ms_rulings:
+					if rulingmat.name not in rulingdict:
+						rulingdict[rulingmat.name] = {'id': rulingmat.id, 'count': 1}
+					else:
+						rulingdict[rulingmat.name]['count'] +=1
+
+		if 'num_volumes' in chart_include:
+			if ms.num_volumes not in num_vols_dict:
+				num_vols_dict[ms.num_volumes] = 1
+			else:
+				num_vols_dict[ms.num_volumes] += 1
+
+
+	if 'people' in chart_include:
+		allpeople = models.person.query.all()
+		peoplecountdict = {}
+
+		for eachperson in allpeople:
+			#get set of MS IDs for each person and get its length -- this is the number of MSS they are related to
+			mspersonrelcount = len(set([association.ms_id for association in eachperson.ms_relations.all()]))
+			#print eachperson.name_display
+			#print mspersonrelcount
+			peoplecountdict[eachperson.name_display] = {'count': mspersonrelcount, 'id': eachperson.id}
+
+		#"invert" dictionary so we can rank most frequent people: frequency maps to a list of people
+		countdict_inv = {}
+		for x in peoplecountdict:
+			if peoplecountdict[x]['count'] not in countdict_inv:
+				countdict_inv[peoplecountdict[x]['count']] = [{'name': x, 'id': peoplecountdict[x]['id']}]
+			else:
+				countdict_inv[peoplecountdict[x]['count']].append({'name': x, 'id': peoplecountdict[x]['id']})
+
+		sorted_dict = [(key, countdict_inv[key]) for key in sorted(countdict_inv.keys(), reverse=True)]
+		#format: [(frequency1: [name1, name2, ...]), (frequency2: [name1, name2, ...]), ...]
+
+
+		freqpeople = []
+		for personfreq in sorted_dict:
+			#print personfreq[0]
+			for ind_person in personfreq[1]:
+				
+				if len(freqpeople) < 15:
+					freqpeople.append({'name': ind_person['name'], 'id': ind_person['id'], 'frequency': personfreq[0]})
+					#print ind_person
+				else:
+					break
+
+
+	if 'watermark' in chart_include:
+		all_wms = models.watermark.query.all()
+		for wm in all_wms:
+			wmsdict[wm.id] = {'name': str(wm.id) + ' ' + wm.name, 'count': len(wm.mss.all())}
+
+	if 'organization' in chart_include:
+		all_orgs = models.organization.query.all()
+		for org in all_orgs:
+			ms_set = set()
+			for ms_rel in org.ms_relations:
+				ms_set.add(ms_rel.ms_id)
+			orgdict[org.name] = {'id': org.id, 'count': len(ms_set)}
+
+	#cent_data = {'visElement': 'langvis', 'visHolderDiv': 'langvisholder', 'toolTipDiv': 'langtooltip', 'x_axis_id': "xaxis-lang", 'x_axis_label': "Language",
+	#'y_axis_label': 'Number of Manuscripts', 'urlpath': 'mss_by_century', 'title': 'Chronology', 'context': 'The majority of manuscripts held by the Robbins Collection are early modern, as well as some medieval and newer materials.', 'data': centobj}
+	avlats = lats/len(placedict)
+	avlons = lons/len(placedict)
 	placeobj = dumps(placedict)
 	#need to use regex to remove quotes in json string  
 	subbedplace =re.sub(r'[\"\' ]', '', placeobj)
 
-	langobj = dumps([{'language': key, 'frequency': langdict[key]['count'], 'id': langdict[key]['id']} for key in langdict])
-	subbedlangs = re.sub(r'[\"\' ]', '', langobj)
 
+	charts = []
+
+	for record in chartrecords:
+		chart_data = {
+		'visElement': record.qualifier + 'vis',
+		 'visHolderDiv': record.qualifier + 'visholder',
+		 'toolTipDiv': record.qualifier + 'tooltip',
+		 'x_axis_id': 'xaxis-' + record.qualifier,
+		 'x_axis_label': record.x_axis_label,
+		 'y_axis_label': record.y_axis_label,
+		 'urlpath': record.urlpath,
+		 'title': record.title,
+		 'context': record.displaytext,
+		  }
+		  #assign "data" based on table
+
+		if record.chartname == 'date':
+			centobj = dumps([{'name': str(key) + 'th', 'frequency': centdict[key], 'id': key} for key in sorted(centdict.keys())])
+			chart_data['data']  = centobj
+
+		elif record.chartname == 'format':
+			formobj = dumps([{'name': formatdict[mstype]['id'], 'id': formatdict[mstype]['id'], 'frequency': formatdict[mstype]['count']} for mstype in formatdict])
+			chart_data['data'] = formobj
+
+		elif record.chartname == 'language':
+			langobj = dumps(sorted([{'name': key, 'frequency': langdict[key]['count'], 'id': langdict[key]['id']} for key in langdict], key=lambda lang_info: lang_info['frequency'], reverse=True))
+			chart_data['data'] = langobj
+
+		elif record.chartname == 'people':
+			peopleobj = json.dumps(freqpeople)
+
+			chart_data['data'] = peopleobj
+
+		elif record.chartname == 'support':
+			suppobj = dumps([{'name': supporttype, 'id': supporttype, 'frequency': supportdict[supporttype]} for supporttype in supportdict if supportdict[supporttype] > 0])
+			chart_data['data'] = suppobj
+
+		elif record.chartname == 'num_volumes':
+			volobj = dumps([{'name': str(volnum), 'id': volnum, 'frequency': num_vols_dict[volnum]} for volnum in num_vols_dict])
+			chart_data['data'] = volobj
+
+		elif record.chartname == 'script':
+			scriptobj = dumps(sorted([{'name': msscript, 'id': scriptdict[msscript]['id'], 'frequency': scriptdict[msscript]['count']} for msscript in scriptdict], key=lambda scriptinstance: scriptinstance['frequency'], reverse=True))
+			chart_data['data'] = scriptobj
+
+		elif record.chartname == 'lines':
+			lineobj = dumps(sorted([{'name': str(lineno), 'id': lineno, 'frequency': linedict[lineno]} for lineno in linedict], key=lambda linesno: linesno['frequency'], reverse=True))
+			chart_data['data'] = lineobj
+
+		elif record.chartname == 'ruling':
+			ruleobj = dumps(sorted([{'name': ruling, 'id': rulingdict[ruling]['id'], 'frequency': rulingdict[ruling]['count']} for ruling in rulingdict], key=lambda rulingtype: rulingtype['frequency'], reverse=True))
+			chart_data['data'] = ruleobj
+
+		elif record.chartname == 'watermark':
+			wmobj = dumps(sorted([{'name': wmsdict[wm]['name'], 'id': wm, 'frequency': wmsdict[wm]['count']} for wm in wmsdict], key=lambda thiswm: thiswm['frequency'], reverse=True))
+			chart_data['data'] = wmobj
+
+		elif record.chartname == 'organization':
+			orgobj = dumps(sorted([{'name': focusorg, 'id': orgdict[focusorg]['id'], 'frequency': orgdict[focusorg]['count']} for focusorg in orgdict], key=lambda orgrecord: orgrecord['frequency'], reverse=True))
+			chart_data['data'] = orgobj
+
+		elif record.chartname == 'place':
+			#use existing place dictionary
+			placechartobj = dumps(sorted([{'name': placename, 'id': placedict[placename]['id'], 'frequency': placedict[placename]['count']} for placename in placedict], key=lambda placeinstance: placeinstance['frequency'], reverse=True))
+			chart_data['data'] = placechartobj
+		charts.append(chart_data)
 
 	#Count up people in collection
 	allpeople = models.person.query.all()
@@ -106,9 +287,11 @@ def homepage():
 				
 	peopleobj = json.dumps(freqpeople)
 
+	peopledata = {'visElement': 'peoplevis', 'visHolderDiv': 'peoplevisholder', 'toolTipDiv': 'peopletooltip', 'x_axis_id': "xaxis-lang", 'x_axis_label': "Person",
+	'y_axis_label': 'Appearances in Manuscript Records', 'urlpath': 'person', 'title': 'People', 'context': 'Many well-known figures share a history with the Robbins Collection\'s holdings, whether as subjects, authors, or owners of manuscripts.  Here are some of those that appear most frequently in the records.', 'data': peopleobj}
 
-	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, centuries = subbedcent,
-	 languages = langobj, people = peopleobj, pagetitle = 'Manuscripts of the Robbins Collection')
+	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, #centuries = subbedcent,
+	 people = peopleobj, pagetitle = 'Manuscripts of the Robbins Collection', charts = charts)
 
 @app.route('/add_ms', methods = ['GET', 'POST'])
 def add_ms():
@@ -163,11 +346,31 @@ def ms_by_format(focusformat):
 
 @app.route('/mss_by_support_<focussupport>', methods=['GET'])
 def ms_by_support(focussupport):
-	support_vols = models.volume.query.filter_by(support=focussupport).order_by(models.volume.ms_id)
+	support_vols = models.volume.query.filter(models.volume.support.like('%' + focussupport + '%')).order_by(models.volume.ms_id)
 	support_mss = [models.manuscript.query.get(vol.ms_id) for vol in support_vols]
 	headline = focussupport.title() + ' Manuscripts'
 
 	return render_template('msresults.html', recs=support_mss, headline=headline)
+
+@app.route('/mss_by_vols<numvols>', methods=['GET'])
+def ms_by_vols(numvols):
+	selectvols = models.manuscript.query.filter_by(num_volumes=numvols).order_by(models.manuscript.id)
+	if numvols == 1:
+		headline = 'Manuscripts with 1 Volume'
+	else:
+		headline = 'Manuscripts with ' + str(numvols) + ' Volumes'
+
+	return render_template('msresults.html', recs=selectvols, headline=headline)
+
+@app.route('/mss_by_lines<lineno>', methods=['GET'])
+def ms_by_lines(lineno):
+	linevols = models.lines.query.get(lineno).volumes
+	linemss = [models.manuscript.query.get(linevol.ms_id) for linevol in linevols]
+
+	headline = 'Manuscripts written in ' + str(lineno) + ' lines'
+
+	return render_template('msresults.html', recs=linemss, headline=headline)
+
 
 @app.route('/ms<idno>', methods = ['GET'])
 def ms_view(idno):
@@ -190,8 +393,10 @@ def ms_view(idno):
 	#get node/link relationship data for graph	
 	graph_data = get_info_from_db(pagems.id, 'manuscript')
 	graphobj = json.dumps(graph_data)
+	#Hardcoded support types - move later to DB?
+	support_types = ['paper', 'parchment', 'papyrus']
 	
-	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, graphsend=graphobj)
+	return render_template('msview.html', pagetitle = pagems.shelfmark, ms=pagems, people = relat_people, supports = support_types, graphsend=graphobj)
 
 @app.route('/places', methods = ['GET'])
 def list_places():
@@ -315,6 +520,43 @@ def ex_doc_view(doc_id):
 	graphobj = json.dumps(graph_data)
 
 	return render_template('exdocview.html', doc = focusdoc, graph = graphobj)
+
+@app.route('/about', methods=['GET'])
+def about():
+	pagetitle = 'About the Project'
+	return render_template('about.html', pagetitle = pagetitle)
+
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+	#need to deal with SMTP server here, otherwise this won't work
+	#put into database instead?
+	pagetitle = 'Feedback'
+	feedback_form = FeedbackForm()
+
+	if request.method == 'GET':
+		sent = False
+		return render_template('feedback.html', form=feedback_form, sent=sent, pagetitle=pagetitle)
+	
+	if request.method == 'POST':
+		#replace this with load to database
+		sent = True
+		feedName = feedback_form.feedback_name.data
+		feedEmail = feedback_form.feedback_email.data
+		feedText = feedback_form.feedback_comment.data
+
+		feedMessage = MIMEText(feedText)
+		feedMessage['Subject'] = 'Comment submitted through Manuscript Exploration Portal'
+		feedMessage['From'] = feedEmail
+		feedMessage['To'] = 'jshedlock@ischool.berkeley.edu'
+
+		s = smtplib.SMTP('localhost')
+		s.sendmail(feedEmail, ['jshedlock@ischool.berkeley.edu'], feedMessage.as_string())
+		s.quit()
+
+
+		return render_template('feedback.html', sent=sent, pagetitle='Feedback Sent')
+
+
 
 
 @app.route('/sendjson', methods = ['GET'])
@@ -615,7 +857,7 @@ def login_user():
 		else:
 		#user in db...retrieve hashed password and salt, compare with input data
 			
-			#cast unicdoe string (WTForms input) to ascii (Python default)
+			#cast unicode string (WTForms input) to ascii (Python default)
 			eval_pw = str(user_login.userpassword.data)
 			
 			#hash and salt are stored b64encoded in database; decode to evaluate
@@ -957,7 +1199,29 @@ def add_user():
 		return redirect(url_for('login_user', next='/adduser'))
 
 	#todo: imitate MS method, get volume to edit and then load data and form
-	return render_template('adduser.html')	
+	return render_template('adduser.html')
+
+@app.route('/homesettings', methods=['GET', 'POST'])
+def homepage_settings():
+	if request.method =='GET':
+		yescharts = json.dumps(sorted([{'id': showchart.id, 'name': showchart.title, 'order': showchart.displayorder} for showchart in models.chart.query.filter_by(display=True).order_by(models.chart.displayorder)], key=lambda retrievechart: retrievechart['order']))
+		nocharts = json.dumps(sorted([{'id': showchart.id, 'name': showchart.title, 'order': showchart.displayorder} for showchart in models.chart.query.filter_by(display=False).order_by(models.chart.displayorder)], key=lambda retrievechart: retrievechart['order']))
+
+		return render_template('adminhomeset.html', pagetitle = 'Home Page Settings', charts_shown=yescharts, charts_notshown=nocharts)
+
+	else:
+		newcharts = request.get_json()
+		for chartindex in range(0, len(newcharts)):
+			mod_chart = models.chart.query.get(newcharts[chartindex]['id'])
+			mod_chart.displayorder = chartindex
+			if newcharts[chartindex]['display'] == 1:
+				mod_chart.display = True
+			else:
+				mod_chart.display = False
+			db.session.add(mod_chart)
+		db.session.commit()
+
+		return render_template('submitted.html', pagetitle = "Charts Updated", doctype = "Changes to Homepage")
 
 #TODO: add 404 handler
 	

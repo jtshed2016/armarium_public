@@ -21,7 +21,7 @@
 				<a href="{{ url_for('list_orgs') }}">Organizations</a>
 				<a href="{{ url_for('list_watermarks') }}">Watermarks</a>
 				<a href="{{ url_for('list_ex_works') }}">Works Citing the Manuscripts</a>
-				<a href="https://www.law.berkeley.edu/library/robbins/">The Robbins Collection</a>
+				<a href="https://www.law.berkeley.edu/research/the-robbins-collection/robbins-collection-library/">The Robbins Collection</a>
 			</nav>
 			{% endblock %}
 		</header>
@@ -35,6 +35,8 @@
 				<img class="logo" alt="Berkeley I School Logo" src="static/berkeleyischool-logo-blue-sm.png">
 			</a>
 			<p>© The Regents of the University of California, The Robbins Religious and Civil Law Collection, School of Law (Boalt Hall), University of California at Berkeley.  •  A Project of The Robbins Collection and the UC Berkeley School of Information</p>
+			<br>
+			<p id="colophon"><a href="{{ url_for('about') }}">About the Project</a></p>
 		</footer>
 	</div>
 	</body>

@@ -132,7 +132,13 @@
 <h4>Volume {{ volume.numeration }}</h4>
 {% endif %}
 {% if volume.support %}
-<p><b>Material: </b><a href="{{url_for('ms_by_support', focussupport=volume.support)}}">{{ volume.support }}</a></p>
+<p><b>Support: </b>
+{% for material in supports %}
+{% if material in volume.support %}
+<a href="{{url_for('ms_by_support', focussupport=material)}}">{{ material }}</a>
+{% endif %}
+{% endfor %}
+</p>
 {% endif %}
 
 {% if volume.extent %}

@@ -1,0 +1,25 @@
+{% extends 'adminbase.html' %}
+{% block javascript %}
+	<script type="text/javascript" src="{{url_for('static', filename='homesettings.js') }}"></script>
+{% endblock %}
+{% block content %}
+<h3>Home Page Settings</h3>
+
+<div class="content">
+	
+	<div class="content" id="chartsdisplayed">
+		<h4>Charts Displayed</h4>
+	</div>
+
+	<div class="content" id="chartsnotdisplayed">
+		<h4>Charts Not Displayed</h4>
+	</div>
+<button type="button" id="postbutton">Submit</button>
+</div>
+
+<script>
+var showncharts = {{ charts_shown|safe }};
+var notshown_charts = {{ charts_notshown|safe }};
+populateMenu(showncharts, notshown_charts);
+</script>
+{% endblock %}

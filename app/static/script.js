@@ -13,6 +13,97 @@ window.onload = function() {
   }
 }
 
+function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_label, data, urlpath) {
+  //take data from an entity or attribute, draw bar chart of frequencies on front page
+    var svg = d3.select(visDiv),
+    margin = {top: 20, right: 20, bottom: 75, left: 40},
+    width = svg.attr("width") - margin.left - margin.right,
+    height = svg.attr('height') - margin.top - margin.bottom;
+
+  svg.append("rect")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("fill", "#fefae9");
+
+  var x = d3.scaleBand().rangeRound([0, width]).padding(0.1),
+  y = d3.scaleLinear().rangeRound([height, 0]);
+
+  var g = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+    x.domain(data.map(function(d) {
+      //return up to 10 characters of language name, plus ellipsis if longer; needs to match .bar entry below
+      if (d.name.length >15) {
+        return d.name.slice(0,15) + '...'
+      } else {
+        return d.name;
+      };      
+    }));
+    y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+    g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("id", x_axis_id)
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+      .selectAll("text")
+      .style("text-anchor", "start")
+      .attr("transform", "rotate(25)");
+
+    //add x-axis label
+    d3.select(x_axis_id)
+      .append("text")
+      .text(x_axis_label)
+      .attr("transform", "translate("+ (width/2).toString() + "," + (margin.bottom* (3/4)).toString() + ")")
+      .attr("class", "axislabel");
+
+    g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y).ticks(10))
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -30)
+      .attr("dy", ".071em")
+      .style("text-anchor", "end")
+      .attr("class", "axislabel")
+      .text(y_axis_label);
+
+    g.selectAll(".bar")
+      .data(data)
+      .enter()
+        .append("a")
+        .attr("xlink:href", function(d) {return urlpath + d.id})
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) {
+          //return up to 10 characters of language name; must match x domain mapping above
+          if (d.name.length > 15) {
+            return x(d.name.slice(0,15) + "...");
+          } else {
+            return x(d.name);
+          }
+        })
+        .attr("y", function(d) {return y(d.frequency); })
+        .attr("width", x.bandwidth())
+        .attr("height", function(d) {return height - y(d.frequency); })
+        .attr("name", function(d) {return d.name;})
+        .on("mouseover", function(d) {
+          if (d.frequency === 1) {
+            tooltext = " manuscript";
+          } else {
+            tooltext = " manuscripts";
+          }
+          d3.select(toolTipDiv)
+          .style("visibility", "visible")
+          .style("top", function() { return(d3.event.pageY - 50) + "px"; })
+          .style("left", function() {return(d3.event.pageX - 100) + "px"; })
+          .html(d.name + ": " + d.frequency + tooltext)
+        })
+        .on("mouseout", function() {d3.select(toolTipDiv).style("visibility", "hidden")});
+
+}
+
 function toggleLabels() {
 	//turn labels on or off in graph vis
 	labelstatus = document.getElementById("labeltoggle")['labeltoggle'].value
@@ -426,4 +517,3 @@ function update(newData) {
     .alpha(1).restart();
 
 }
-

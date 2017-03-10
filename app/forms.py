@@ -94,4 +94,8 @@ class ContentEditForm(Form):
 	fol_end_side = SelectField('fol_end_side', choices = [('v', 'Verso'), ('r', 'Recto')])
 	fol_text = TextAreaField('content_item_text')
 
+class FeedbackForm(Form):
+	feedback_name = StringField('feedback_name')
+	feedback_email = StringField('feedback_email')
+	feedback_comment = TextAreaField('feedback_comment')
 	

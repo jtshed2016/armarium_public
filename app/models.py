@@ -336,3 +336,17 @@ class user(db.Model):
 	def __repr__(self):
 		return '<user ' + self.username + '>'
 
+class chart(db.Model):
+	#table that stores information for populating charts on the home page
+	id = db.Column(db.Integer, primary_key = True)
+	chartname = db.Column(db.String(30))
+	title = db.Column(db.String(50))
+	qualifier = db.Column(db.String(20))
+	#unique, descriptive string appended to HTML IDs to make them unique per page
+	x_axis_label = db.Column(db.String(50))
+	y_axis_label = db.Column(db.String(50))
+	urlpath = db.Column(db.String(50))
+	displaytext = db.Column(db.String(1000))
+	display = db.Column(db.Boolean)
+	displayorder = db.Column(db.Integer)
+	#route of display page for entity or attribute represented in the table

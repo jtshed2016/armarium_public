@@ -71,7 +71,7 @@
 	<script>
 	sourceData = {{ chartobj['data']|safe }}
 	
-	renderHomeChart("#{{ chartobj['visElement'] }}", "#{{ chartobj['toolTipDiv'] }}", "#{{ chartobj['x_axis_id'] }}", "{{ chartobj['x_axis_label'] }}", "{{ chartobj['y_axis_label'] }}", sourceData, "{{ chartobj['urlpath'] }}");
+	renderHomeChart("#{{ chartobj['visElement'] }}", "#{{ chartobj['toolTipDiv'] }}", "{{ chartobj['x_axis_id'] }}", "{{ chartobj['x_axis_label'] }}", "{{ chartobj['y_axis_label'] }}", sourceData, "{{ chartobj['urlpath'] }}");
 	</script>
 
 	{% endfor %}

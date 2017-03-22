@@ -55,7 +55,7 @@ for record in allrecs:
 	if record == 'RobbinsMSCould not find valid shelfmark':
 		continue
 	print record
-	if allrecs[record]['format'] == '':
+	if ((allrecs[record]['format'] == '') or (allrecs[record]['format'] == None)):
 		thismsformat = 'Unspecified'
 	else:
 		thismsformat = allrecs[record]['format']
@@ -287,3 +287,42 @@ for record in allrecs:
 		else:
 			placeQuery.mss.append(models.manuscript.query.get(ms.id))
 			db.session.commit()
+
+	for subject in allrecs[record]['subjects']:
+		subjquery = models.subject.query.filter_by(subj_name=subject['subj_name']).first()
+		if subjquery == None:
+			newSubj = models.subject(
+				subj_name = subject['subj_name'],
+				subj_type = subject['subj_type'],
+				)
+			db.session.add(newSubj)
+			db.session.commit()
+
+		#make sure all subdivisions are in DB
+		for subjarea in ['form', 'topic', 'place', 'chronology']:
+			for subdivision in subject[subjarea]:
+				subdiv_query = models.subject.query.filter_by(subj_name=subdivision).first()
+				if subdiv_query == None:
+					newSubdiv = models.subject(
+						subj_name=subdivision,
+						subj_type= subjarea)
+					db.session.add(newSubdiv)
+					db.session.commit()
+		
+		#add all subdivisions to array to be used to instantiate association table of subject for MS
+		assoc_subdivisions = []
+		for subjarea in ['form', 'topic', 'place', 'chronology']:
+			for subdivision in subject[subjarea]:
+				added_subdiv = models.subject.query.filter_by(subj_name=subdivision).first()
+				assoc_subdivisions.append(added_subdiv)
+				
+		subjectInstance = models.ms_subject_assoc(
+			ms_id = ms.id,
+			main_subj_id = models.subject.query.filter_by(subj_name=subject['subj_name']).first().id,
+			subdivisions = assoc_subdivisions
+			)
+
+		db.session.add(subjectInstance)
+		db.session.commit()
+
+

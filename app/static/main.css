@@ -132,7 +132,7 @@ nav a {
 
 /*div for map on home page*/
 .mapholder {
-	/*text-align: center;*/
+	text-align: center;
 	height: 400px;
 }
 
@@ -197,6 +197,10 @@ footer {
 footer *{
 	display: inline-block;
 	margin: .5em;
+}
+
+footer p {
+	text-align: center;
 }
 
 img.logo {
@@ -280,6 +284,10 @@ li {
 #nodeinfo {
 	display: inline-block;
 	max-width: 50%;
+}
+
+#error_img {
+	height: 300px;
 }
 /* for d3 histogram vis (front page) */
 

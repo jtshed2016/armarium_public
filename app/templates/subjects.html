@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Subjects</h3>
+<div class="section">
+<p>This page lists subjects addressed by manuscripts in the Robbins Collection.  It is not exhaustive, since most manuscript catalog records do not currently include subjects; however, these will be added in the future.</p>
+</div>
+<div id="contentsdiv">
+<h4>Personal Names</h4>
+<table>
+{% for personsubj in people %}
+<tr><td><a href="{{ url_for('view_person', personid=personsubj.id) }}">{{personsubj.name_main}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Corporate Names</h4>
+<table>
+{% for orgsubj in org %}
+<tr><td><a href="{{ url_for('org_view', orgid=orgsubj.id) }}">{{orgsubj.name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Meeting Names</h4>
+<table>
+{% for meetsubj in meeting %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=meetsubj.id) }}">{{meetsubj.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Uniform Titles</h4>
+<table>
+{% for titlesubj in title %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=titlesubj.id) }}">{{titlesubj.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Topical Terms</h4>
+<table>
+{% for topicsubj in topic %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=topicsubj.id) }}">{{topicsubj.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Geographic Terms</h4>
+<table>
+{% for geosubj in place %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=geosubj.id) }}">{{geosubj.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Chronological Terms</h4>
+<table>
+{% for chronterm in chronsubj %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=chronterm.id) }}">{{chronterm.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+
+<h4>Genre/Form</h4>
+<table>
+{% for form in genre %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=form.id) }}">{{form.subj_name}}</a></td></tr>
+{% endfor %}
+</table>
+</div>
+
+{% endblock %}
+
+
+
+

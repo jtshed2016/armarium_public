@@ -98,4 +98,13 @@ class FeedbackForm(Form):
 	feedback_name = StringField('feedback_name')
 	feedback_email = StringField('feedback_email')
 	feedback_comment = TextAreaField('feedback_comment')
-	
+
+class ChartEditForm(Form):
+	chart_id = HiddenField('chart_id')
+	chart_title = StringField('chart_title')
+	chart_y_label = StringField('chart_y_label')
+	chart_x_label = StringField('chart_x_label')
+	chart_text = TextAreaField('chart_text')
+	chart_max_values = IntegerField('chart_max_values')
+	people_chart_roles = SelectMultipleField('people_roles', coerce=int)
+

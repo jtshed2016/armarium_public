@@ -1,0 +1,47 @@
+{% extends 'adminbase.html' %}
+{% block javascript %}
+<script>
+	targetDiv = "{{ chartobj['visElement'] }}"
+	targetTip = "{{ chartobj['toolTipDiv'] }}"
+	x_id = "{{ chartobj['x_axis_id'] }}"
+	x_label = "{{ chartobj['x_axis_label'] }}"
+	y_label = "{{ chartobj['y_axis_label'] }}"
+	chart_data = {{ chartobj['data']|safe }}
+	charturl = "{{ chartobj['urlpath'] }}"
+</script> 
+
+
+<script src="{{ url_for('static', filename = 'd3.v4.min.js') }}"></script>
+
+{% endblock %}
+{% block content %}
+<div class="content">
+	<div class="inputform">
+	<h3>Settings for Chart "{{ chartobj.title }}"</h3>
+	<form action="" method="post" name="chartsettingform">
+		<p>Title: ("headline" text for chart) {{chartform.chart_title}}<p>
+		<p>X-axis Label: {{chartform.chart_x_label}}</p>
+		<p>Y-axis Label: {{chartform.chart_y_label}}</p>
+		<p>Maximum Number of Values to Display: {{ chartform.chart_max_values}}</p>
+		<p>Chart Text (explanatory/contextual paragraph next to chart):</p>
+		<br>
+		<p>{{chartform.chart_text}}</p>
+		<input type="button" id="previewbutton" value="Preview Chart">
+		<input type="submit" id="chartsubmit" value="Save Chart Settings">
+	</form>
+	</div>
+
+
+	<div class="section" id="{{ chartobj['visHolderDiv'] }}">
+		<div id="{{ chartobj['toolTipDiv'] }}" class="tooltip"></div>
+		<svg id="{{ chartobj['visElement'] }}" width="400" height="300"></svg>
+		<div class="viscontext">
+		<h3>{{ chartobj['title'] }}</h3>
+		<p>{{ chartobj['context'] }}</p>
+		</div>
+	</div>
+
+</div>
+<script type="text/javascript" src="{{url_for('static', filename='script.js') }}"></script>
+<script type="text/javascript" src="{{url_for('static', filename='chartpreview.js') }}"></script>
+{% endblock %}

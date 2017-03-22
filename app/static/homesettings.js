@@ -19,7 +19,12 @@ function populateMenu(chartsShown, chartsNotShown) {
 		iterChoice.setAttribute("class", "chartchoice");
 
 		chartname = document.createElement("P");
-		chartname.innerHTML = chartsShown[shownchart].name;
+		chartlink = document.createElement("A");
+		chartlink.setAttribute("href", 'editchart' + chartsShown[shownchart].id.toString());
+		chartlink.setAttribute("target", "_blank");
+		chartlink.setAttribute("rel", "noopener noreferrer");
+		chartlink.innerHTML = chartsShown[shownchart].name;
+		chartname.appendChild(chartlink);
 
 		upButton = document.createElement("BUTTON");
 		upButton.setAttribute("class", "up_button")
@@ -71,7 +76,12 @@ function populateMenu(chartsShown, chartsNotShown) {
 		iterChoice.setAttribute("class", "chartchoice");
 
 		chartname = document.createElement("P");
-		chartname.innerHTML = chartsNotShown[hidechart].name;
+		chartlink = document.createElement("A");
+		chartlink.setAttribute("href", 'editchart' + chartsNotShown[hidechart].id.toString());
+		chartlink.setAttribute("target", "_blank");
+		chartlink.setAttribute("rel", "noopener noreferrer");
+		chartlink.innerHTML = chartsNotShown[hidechart].name;
+		chartname.appendChild(chartlink);
 
 		showButton = document.createElement("BUTTON");
 		showButton.setAttribute("class", "show_button");
@@ -144,13 +154,23 @@ function postdata() {
   	notshown_charts[i].display = 0;
   	returnlist.push(notshown_charts[i]);
   }
-  console.log(returnlist);
 
   chartsupdate = new XMLHttpRequest();
   var url = '';
   chartsupdate.open("POST", url, true);
   chartsupdate.setRequestHeader("Content-type", "application/json");
+  chartsupdate.onload = function() {
+  	console.log(chartsupdate.status);
+  }
   chartsupdate.send(JSON.stringify(returnlist));
-  alert('Homepage settings updated.');
+  mainDiv = document.getElementById("maindiv");
+  allContent = mainDiv.childNodes;
+  while (maindiv.hasChildNodes()) {
+  	mainDiv.removeChild(mainDiv.lastChild);
+  }
+  successMessage = document.createElement('h3');
+  successMessage.innerHTML = 'Changes submitted!';
+  mainDiv.appendChild(successMessage);
+
 }
 

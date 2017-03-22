@@ -51,6 +51,15 @@
 <br>
 <p><b>Language: </b><a href="{{url_for('ms_by_language', focus_lang_id=ms.ms_language.id)}}">{{ ms.ms_language.name }}</a></p>
 
+{% if ms.subjects %}
+<br>
+<p><b>Subjects: </b></p>
+{% for subjectassoc in ms.subjects %}
+<p><a href="{{url_for('ms_by_subject', subjid=subjectassoc.main_subj_id)}}">{{ subjectassoc.subjects.subj_name }}</a> {% if subjectassoc.subdivisions %} – {% for subdivision in subjectassoc.subdivisions %}<a href="{{url_for('ms_by_subject', subjid=subdivision.id)}}">{{ subdivision.subj_name }}</a>{% if not loop.last %} – {% endif %}{% endfor %}{% endif %}</p>
+{% endfor %}
+{% endif %}
+
+
 {% if ms.publisher %}
 <p>Published by: {{ ms.publisher }}</p>
 {% endif %}

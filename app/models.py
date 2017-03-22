@@ -57,6 +57,9 @@ has_ruling = db.Table('has_ruling',
 	)
 
 
+subdivision_assoc = db.Table('subdivision_assoc',
+	db.Column('assoc_id', db.Integer, db.ForeignKey('ms_subject_assoc.id')),
+	db.Column('sub_id', db.Integer, db.ForeignKey('subject.id')))
 
 
 #the central entity of the system, representing a unified textual item
@@ -105,6 +108,10 @@ class manuscript(db.Model):
 	treatments = db.relationship('external_doc',
 		secondary=has_external_doc,
 		backref = db.backref('mss', lazy='dynamic')
+		)
+	subjects = db.relationship('ms_subject_assoc',
+		backref = 'ms', 
+		lazy = 'dynamic'
 		)
 
 	def __repr__(self):
@@ -326,6 +333,33 @@ class language(db.Model):
 
 	def __repr__(self):
 		return '<language ' + str(self.id) + ': ' + self.name + '>'
+
+class ms_subject_assoc(db.Model):
+	#association table to store main and subdivision subjects for MSS
+	id = db.Column(db.Integer, primary_key=True)
+	ms_id = db.Column(db.Integer, db.ForeignKey('manuscript.id'))
+	main_subj_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
+	subdivisions = db.relationship('subject', 
+		secondary=subdivision_assoc, 
+		backref=db.backref('ms_associations', lazy='dynamic'))
+
+	def __repr__(self):
+		return '<subject_assoc ' + str(self.id) + ' (MS' + str(self.ms_id) + ')>'
+
+class subject(db.Model):
+	#600 fields and subfields
+	id = db.Column(db.Integer, primary_key=True)
+	subj_name = db.Column(db.String(100))
+	subj_type = db.Column(db.String(50))
+	main_sub_relationship = db.relationship('ms_subject_assoc', 
+		backref='subjects', 
+		lazy='dynamic')
+	
+	#topic, place, meeting, uniform title, genre/form
+	#organization, people subjects stored as those types
+
+	def __repr__(self):
+		return '<subject ' + self.subj_name + ' (' + self.subj_type + ')>'
 	
 class user(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
@@ -349,4 +383,10 @@ class chart(db.Model):
 	displaytext = db.Column(db.String(1000))
 	display = db.Column(db.Boolean)
 	displayorder = db.Column(db.Integer)
-	#route of display page for entity or attribute represented in the table
+	max_values = db.Column(db.Integer)
+
+
+	def __repr__(self):
+		return '<chart ' + self.chartname + '>'
+
+

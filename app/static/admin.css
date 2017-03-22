@@ -88,6 +88,12 @@ form {
 	width: 100%;
 }
 
+form textarea {
+	width: 80%;
+	margin: .5em;
+	height: 5em;
+}
+
 table, th, td {
 	vertical-align: top;
 	border-width: 2px;
@@ -158,4 +164,47 @@ table, th, td {
 #postbutton {
 	text-align: center;
 	clear: both;
+}
+
+
+/* for d3 histogram vis (front page) */
+
+
+.bar { 
+	fill: steelblue;
+}
+.bar:hover {
+	fill:brown;
+}
+
+svg text {
+	fill: black;
+	font: 10px sans-serif;
+	text-anchor: end;
+}
+.axislabel {
+	fill: black;
+	font: 15px sans-serif;
+	text-anchor: middle;
+}
+
+/*tooltip style and code from Steve Hall, http://projects.delimited.io/experiments/chord-diagrams/hair.html */
+.tooltip {
+    color: white;
+    opacity: .9;
+    background: #333;
+    padding: 5px;
+    border: 1px solid lightgrey;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 10;
+    visibility: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.viscontext {
+	display: inline-block;
+	max-width: 40%;
+	vertical-align: 150%;
 }

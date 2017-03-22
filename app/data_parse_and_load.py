@@ -41,8 +41,10 @@ scriptDict = {'hyphen': {'semi-textualis': 'semitextualis', 'semi-italic': 'semi
 'yemenite': 'Yemenite', 'hebrew': 'Hebrew', 'square': 'square', 'naskhī': 'naskhī', 'temanic': 'Temanic',
 'mashait': 'Mashait', 'sephardic': 'Sephardic', 'uncial': 'uncial', 'formata': 'formata', 'antica': 'antica',
 'arisiensis': 'Parisiensis'}}
+
 numerals = {'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10}
 
+subj_field_types = {'611': 'meeting', '630': 'uniform title', '648': 'chronology', '650': 'topic', '651': 'place', '655': 'form'}
 
 placeCache = {}
 #store places here after call to server; prevent unnecessary multiple calls
@@ -725,6 +727,25 @@ def insert_space_before_punct(s):
     s = re.sub(r'([.,!?;:")(])', r' \1', s)
     return s
 
+def getSubjects(subj_type, fieldData):
+    returndict = {'subj_type': subj_type,
+                  'subj_name': fieldData.split('|')[0].strip('., '),
+                  'form': [],
+                  'topic': [],
+                  'chronology': [],
+                  'place': []}
+    subfields = subfieldpat4.findall(fieldData)
+    for subfield in subfields:
+        if subfield[0] == '|v':
+            returndict['form'].append(subfield[1])
+        elif subfield[0] == '|x':
+            returndict['topic'].append(subfield[1])
+        elif subfield[0] == '|y':
+            returndict['chronology'].append(subfield[1])
+        elif subfield[0] == '|z':
+            returndict['place'].append(subfield[1])
+    return returndict
+
 #########################################################
 #########################################################
 #########################################################
@@ -741,7 +762,8 @@ def load(recs):
 		#add none for all values to avoid key errors
 		outputdict[record] = {'shelfmark': None, 'volumes': None, 'language': None, 'date1': None, 'externaldocs': [],
 		'date2': None, 'datetype': None, 'datecertain': True, 'places': [], 'format': None, 'decoration': None, 'binding': None,
-		'titles': [], 'people': {}, 'organizations': {}, 'contents': [], 'summary': None, 'origin': None, 'ownership_history': None, 'ds_url': None}
+		'titles': [], 'people': {}, 'organizations': {}, 'contents': [], 'summary': None, 'origin': None, 'ownership_history': None,
+		'subjects': [], 'ds_url': None}
 		
 
 		#get structured data from field 008
@@ -1082,6 +1104,10 @@ def load(recs):
 				if len(recs[record][field]) >1:
 					print('Multiple 561!!!')
 				outputdict[record]['ownership_history'] = recs[record][field][0]
+
+			if field[:3] in {'611', '630', '650', '651', '655'}:
+				for subjectinstance in recs[record][field]:
+					outputdict[record]['subjects'].append(getSubjects(subj_field_types[field[:3]], subjectinstance))
 
 			if '856' in field:
 				url = re.search(r'(\|u)(.*$)', recs[record][field][0]).group(2)

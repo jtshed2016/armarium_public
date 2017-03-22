@@ -20,6 +20,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
     width = svg.attr("width") - margin.left - margin.right,
     height = svg.attr('height') - margin.top - margin.bottom;
 
+
   svg.append("rect")
     .attr("width", "100%")
     .attr("height", "100%")
@@ -52,7 +53,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
       .attr("transform", "rotate(25)");
 
     //add x-axis label
-    d3.select(x_axis_id)
+    d3.select('#' + x_axis_id)
       .append("text")
       .text(x_axis_label)
       .attr("transform", "translate("+ (width/2).toString() + "," + (margin.bottom* (3/4)).toString() + ")")

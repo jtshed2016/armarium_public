@@ -932,10 +932,25 @@ def get_chart_info(chartlist):
 				ms_set.add(ms_rel.ms_id)
 			orgdict[org.name] = {'id': org.id, 'count': len(ms_set)}
 
+	if 'subject' in chartlist:
+		subjectdict = {}
+		all_subj = models.subject.query.all()
+		for subj in all_subj:
+			subj_mss_set = set()
+			for assoc in subj.main_sub_relationship.all():
+				subj_mss_set.add(assoc.ms)
+
+			for assoc in subj.ms_associations:
+				subj_mss_set.add(assoc.ms)
+
+			subjectdict[subj.subj_name] = {'id': subj.id, 'count': len(subj_mss_set)}
+
+
 	#create set of ms-related chart features to determine whether to loop through MSS or not
-	iterate_charts = {'format', 'date', 'language', 'support', 'num_volumes', 'script', 'lines', 'ruling'}
+	iterate_charts = {'format', 'date', 'language', 'support', 'num_volumes', 'script', 'lines', 'ruling', 'place'}
 	live_chart_set = set(chartlist)
 
+	#loop through MSS only if at least one chart requires it
 	if len(live_chart_set.intersection(iterate_charts)) >=1:
 		langdict = {}
 		centdict = {}
@@ -945,9 +960,16 @@ def get_chart_info(chartlist):
 		scriptdict = {}
 		linedict = {}
 		rulingdict = {}
+		placedict = {}
 
 		itermss = models.manuscript.query.all()
 		for ms in itermss:
+			if 'place' in chartlist:
+				for allPlace in ms.places:
+					if allPlace.place_name not in placedict:
+						placedict[allPlace.place_name] = {'count': 1, 'id': allPlace.id}
+					else:
+						placedict[allPlace.place_name]['count'] += 1
 			
 			if 'date' in chartlist:
 			#count up manuscripts from each century
@@ -1035,7 +1057,8 @@ def get_chart_info(chartlist):
 		 'y_axis_label': displaychart.y_axis_label,
 		 'urlpath': displaychart.urlpath,
 		 'title': displaychart.title,
-		 'context': displaychart.displaytext
+		 'context': displaychart.displaytext,
+		 'max_values': displaychart.max_values
 		  }
 
 		if displaychart.chartname == 'date':
@@ -1084,9 +1107,13 @@ def get_chart_info(chartlist):
 			chart_data['data'] = orgobj
 
 		elif displaychart.chartname == 'place':
-			#use existing place dictionary
 			placechartobj = json.dumps(sorted([{'name': placename, 'id': placedict[placename]['id'], 'frequency': placedict[placename]['count']} for placename in placedict], key=lambda placeinstance: placeinstance['frequency'], reverse=True))
 			chart_data['data'] = placechartobj
+			#add "countries only"?
+
+		elif displaychart.chartname == 'subject':
+			subjectobj = json.dumps(sorted([{'name': subject, 'id': subjectdict[subject]['id'], 'frequency': subjectdict[subject]['count']} for subject in subjectdict], key=lambda subjinstance: subjinstance['frequency'], reverse=True))
+			chart_data['data'] = subjectobj
 		returnlist.append(chart_data)
 
 	return returnlist

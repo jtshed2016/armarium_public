@@ -1,6 +1,6 @@
 window.onload = function() {
 	previewbutton = document.getElementById('previewbutton');
-	previewbutton.addEventListener("click", (function(val1, val2, val3, val4, val5, val6, val7) {
+	previewbutton.addEventListener("click", (function(val1, val2, val3, val4, val5, val6, val7, val8) {
 		return function() {
 			mainsvg = document.getElementById(targetDiv);
 			svgGraphics = mainsvg.querySelectorAll('g');
@@ -20,7 +20,7 @@ window.onload = function() {
 			//not used yet---need to add to main renderHomeChart method
 			val8 = document.getElementById('chart_max_values').value;
 
-			renderHomeChart(val1, val2, val3, val4, val5, val6, val7);
+			renderHomeChart(val1, val2, val3, val4, val5, val6, val7, val8);
 
 			contextDiv = document.querySelectorAll('.viscontext')[0];
 			
@@ -32,7 +32,7 @@ window.onload = function() {
 
 
 		};
-	}('#' + targetDiv, '#' + targetTip, x_id, x_label, y_label, chart_data, charturl)));	
+	}('#' + targetDiv, '#' + targetTip, x_id, x_label, y_label, chart_data, charturl, max_values)));	
 }
 
 //need to update chart context and headline, too

@@ -13,8 +13,9 @@ window.onload = function() {
   }
 }
 
-function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_label, data, urlpath) {
+function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_label, data, urlpath, maxValues) {
   //take data from an entity or attribute, draw bar chart of frequencies on front page
+ yaxis_format = d3.format(".0d");
     var svg = d3.select(visDiv),
     margin = {top: 20, right: 20, bottom: 75, left: 40},
     width = svg.attr("width") - margin.left - margin.right,
@@ -33,7 +34,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
-    x.domain(data.map(function(d) {
+    x.domain(data.slice(0,maxValues).map(function(d) {
       //return up to 10 characters of language name, plus ellipsis if longer; needs to match .bar entry below
       if (d.name.length >15) {
         return d.name.slice(0,15) + '...'
@@ -41,7 +42,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
         return d.name;
       };      
     }));
-    y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+    y.domain([0, d3.max(data.slice(0,maxValues), function(d) { return d.frequency; })]);
 
     g.append("g")
       .attr("class", "axis axis--x")
@@ -61,7 +62,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
 
     g.append("g")
       .attr("class", "axis axis--y")
-      .call(d3.axisLeft(y).ticks(10))
+      .call(d3.axisLeft(y).ticks(5).tickFormat(yaxis_format))
       .append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", -30)
@@ -71,7 +72,7 @@ function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_lab
       .text(y_axis_label);
 
     g.selectAll(".bar")
-      .data(data)
+      .data(data.slice(0,maxValues))
       .enter()
         .append("a")
         .attr("xlink:href", function(d) {return urlpath + d.id})

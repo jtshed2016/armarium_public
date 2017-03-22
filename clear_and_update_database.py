@@ -41,7 +41,9 @@ for tabledict in chartinfo['tables']:
 		urlpath = tabledict['urlpath'],
 		displaytext = tabledict['displaytext'],
 		display = tabledict['display'],
-		displayorder = tabledict['order']
+		displayorder = tabledict['order'],
+		max_values = 15
+		#default value of 15, can be adjusted in admin UI
 		)
 	db.session.add(newtable)
 	db.session.commit()
@@ -56,7 +58,7 @@ for record in allrecs:
 		continue
 	print record
 	if ((allrecs[record]['format'] == '') or (allrecs[record]['format'] == None)):
-		thismsformat = 'Unspecified'
+		thismsformat = 'unspecified'
 	else:
 		thismsformat = allrecs[record]['format']
 

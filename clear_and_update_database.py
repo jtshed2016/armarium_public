@@ -65,7 +65,7 @@ for record in allrecs:
 	ms = models.manuscript(
 		id = int(allrecs[record]['shelfmark'].split(' ')[2]),
 		shelfmark = allrecs[record]['shelfmark'],
-		ms_format = allrecs[record]['format'],
+		ms_format = thismsformat,
 		date1 = allrecs[record]['date1'],
 		date2 = allrecs[record]['date2'],
 		datetype = allrecs[record]['datetype'],

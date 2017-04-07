@@ -15,7 +15,13 @@ firstpw_II = 'b'
 
 while (firstusername == '') or (firstpw != firstpw_II):
 	firstusername = raw_input('Enter the user name: \n')
-	#firstpw = raw_input('Enter password: ')
+
+	#check to see if username already exists
+	usernametest = models.user.query.filter_by(username=firstusername).first()
+	if usernametest != None:
+		print 'Username taken.  Please select a different name.'
+		continue
+
 	firstpw = getpass.getpass('Enter password: \n')
 	firstpw_II = getpass.getpass('Enter password again: \n')
 
@@ -29,6 +35,7 @@ firstsalt = os.urandom(24)
 
 firsthash = pbkdf2_hmac('sha512', firstpw, firstsalt, 100000)
 firsthash = b64encode(firsthash)
+
 
 
 firstuser = models.user(

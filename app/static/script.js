@@ -1,20 +1,111 @@
 graphViewPaths = ['/ms', '/person', '/place', '/org', '/watermark', '/exwork', '/exdoc']
 
 window.onload = function() {
-  /*
-  console.log(window.location.pathname);
-  console.log((window.location.pathname).replace(/[0-9]*$/, ''));
 
-  console.log(graphViewPaths.indexOf((window.location.pathname).replace(/[0-9]*$/, '')));
-  */
   if (graphViewPaths.indexOf((window.location.pathname).replace(/[0-9]*$/, '')) !== -1) {
 
 	 document.getElementById("labeltoggle").addEventListener("change", toggleLabels);
+  } else if (window.location.pathname === '/adduser') {
+    document.getElementById("username").addEventListener("keyup", validateUserFields);
+    document.getElementById("password_main").addEventListener("keyup", validateUserFields);
+    document.getElementById("password_check").addEventListener("keyup", validateUserFields);
+  } else if (window.location.pathname === '/edituser') {
+    document.getElementById("curr_password").addEventListener("keyup", validatePwChangeFields);
+    document.getElementById("upd_password_main").addEventListener("keyup", validatePwChangeFields);
+    document.getElementById("upd_password_check").addEventListener("keyup", validatePwChangeFields);
+  } else if ((window.location.pathname === '/') && (document.getElementById("peoplevisholder") !== null)) {
+    roleselectors = document.querySelectorAll('.roleselect');
+    for (i =0; i < roleselectors.length; i++) {
+      roleselectors[i].addEventListener('change', function() { includeRels[this.name] = this.checked });
+      roleselectors[i].addEventListener('change', reRenderPeopleChart);
+    }
   }
+
 }
 
-function renderHomeChart(visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_label, data, urlpath, maxValues) {
-  //take data from an entity or attribute, draw bar chart of frequencies on front page
+function reRenderPeopleChart() {
+  mainsvg = document.getElementById(peoplechartInfo['visDiv']);
+  svgGraphics = mainsvg.querySelectorAll('g');
+  svgRects = mainsvg.querySelectorAll('rect');
+  
+  if (svgGraphics.length > 0) {
+    mainsvg.removeChild(svgGraphics[0]);
+    }
+
+  if (svgRects.length > 0) {
+    mainsvg.removeChild(svgRects[0]);
+  }  
+
+  renderHomeChart(peoplechartInfo['chartName'], '#' + peoplechartInfo['visDiv'], '#' + peoplechartInfo['toolTipDiv'], peoplechartInfo['x_axis_id'], peoplechartInfo['x_axis_label'], peoplechartInfo['y_axis_label'], sourceData, peoplechartInfo['urlpath'], peoplechartInfo['maxValues']);
+
+
+}
+
+function validateUserFields() {
+  var validated = true;
+  var submitButton = document.getElementById("usersubmit");
+  if (document.getElementById("username").value === '') {
+    validated = false;
+  }
+  if (document.getElementById("password_main").value === '') {
+    validated = false;
+  }
+  if (document.getElementById("password_check").value === '') {
+    validated = false;
+  }
+  
+  if (validated === true) {
+    submitButton.disabled = false;
+  } else if (validated === false) {
+    submitButton.disabled = true;
+  }
+
+}
+
+function validatePwChangeFields() {
+  var validated = true;
+  var submitButton = document.getElementById("usersubmit");
+  if (document.getElementById("curr_password").value === '') {
+    validated = false;
+  }
+  if (document.getElementById("upd_password_main").value === '') {
+    validated = false;
+  }
+  if (document.getElementById("upd_password_check").value === '') {
+    validated = false;
+  }
+  
+  if (validated === true) {
+    submitButton.disabled = false;
+  } else if (validated === false) {
+    submitButton.disabled = true;
+  }
+
+}
+
+function renderHomeChart(chartName, visDiv, toolTipDiv, x_axis_id, x_axis_label, y_axis_label, data, urlpath, maxValues) {
+  //take data from an entity or attribute, draw bar chart of frequencies on front page or preview admin page
+//if the chart is "people", only use the types of relationships between people and manuscripts that are specified
+if (chartName === 'people') {
+  var filteredObject = {};
+  for (i = 0; i < data.length; i++) {
+    if (includeRels[data[i].reltype] === true) {
+      if (filteredObject[data[i].name] === undefined) {
+        filteredObject[data[i].name] = {'name': data[i].name, 'id': data[i].id, 'frequency': 1}
+      } else {
+        filteredObject[data[i].name]['frequency']++;
+      }
+    }
+  }
+  var filteredArray = [];
+  for (i in Object.keys(filteredObject)) {
+    filteredArray.push(filteredObject[Object.keys(filteredObject)[i]]);
+  }
+  filteredArray.sort(function(a,b) { return b.frequency - a.frequency})
+  data = filteredArray;
+}
+
+
  yaxis_format = d3.format(".0d");
     var svg = d3.select(visDiv),
     margin = {top: 20, right: 20, bottom: 75, left: 40},

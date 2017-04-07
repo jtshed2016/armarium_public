@@ -115,26 +115,36 @@ if __name__ == '__main__':
 		recordlines = record['marcstring'].split('\n')
 		record_shelfmark = get_shelfmark(recordlines)
 
+		#print recordlines
 
 		item_list = []
 		item_dict = {}
 		#produce a list where 1 MARC field == 1 line == 1 list value
 		for line in recordlines:
 			#print(line)
-			if line[:6].strip() == '':
+			if line.strip() == '':
 				pass
+			#change back to elif if this doesn't work
 			elif line[:6] != "      ":
 				item_list.append(line.strip())
 			else:
 				item_list[len(item_list)-1] = item_list[len(item_list)-1] + " " + line.strip()
 
 		for marc_line in item_list:
+			#print marc_line
 			if marc_line[:6].strip() in item_dict:
 				item_dict[marc_line[:6].strip()].append(marc_line[7:])
 			else: 
 				item_dict[marc_line[:6].strip()] = [marc_line[7:]]
 
+		item_dict['stable_url'] = record['stable_url']
 		output_dict[record_shelfmark] = item_dict
+
+
+	newsourceobj = open('source04062017.json', 'w')
+	json.dump(output_dict, newsourceobj)
+	newsourceobj.close()
+	exit()
 
 
 	###Select data to parse and ingest: only use new records
@@ -145,10 +155,11 @@ if __name__ == '__main__':
 	additions = new_ids.difference(current_ids)
 
 	#print additions
-
+	'''
 	go_ahead = raw_input('Continue parsing and loading data?  (Y/N)')
 	if go_ahead.lower() != 'y':
 		exit()
+	'''
 
 	##################
 	###Parse data to necessary format for database ingestion
@@ -186,6 +197,7 @@ if __name__ == '__main__':
 			origin = parsed_data[parsed_record]['origin'],
 			decoration = parsed_data[parsed_record]['decoration'],
 			binding = parsed_data[parsed_record]['binding'],
+			catalog_url = parsed_data[parsed_record]['stable_url'],
 			ds_url = parsed_data[parsed_record]['ds_url']
 			)
 		db.session.add(ms)

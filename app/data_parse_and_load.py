@@ -11,13 +11,13 @@ from bs4 import BeautifulSoup
 
 
 relpath = os.path.dirname(__file__)
-
+'''
 #get existing manuscript data in JSON format
 sourcefile = os.path.join(relpath, 'trial_II160119.json')
 sourceobj = open(sourcefile)
 sourcedict = json.load(sourceobj)
 sourceobj.close()
-
+'''
 #get reference dictionaries for country, language, association codes
 countryObj = open(os.path.join(relpath, 'static/loccountrycodes.json'))
 langObj = open(os.path.join(relpath,'static/loclangcodes.json'))
@@ -647,12 +647,12 @@ def parseOrg(orgField, fieldType):
 	key = orgField.split('|')[0].strip('., ')
 	returndict = {'subord_org': False, 'relator': None}
 	if fieldType == '110':
-		returndict['relator'] = 'author'
+		returndict['relator'] = 'Author'
 	elif fieldType == '610':
-		returndict['relator'] = 'subject'
+		returndict['relator'] = 'Subject'
 	elif fieldType == '710':
-		returndict['relator'] = 'associated name'
-		#Add general "associated name" relationship, but overwrite it later if more specific info appears
+		returndict['relator'] = 'Associated name'
+		#Add general "Associated name" relationship, but overwrite it later if more specific info appears
 	
 	if subfieldpat.search(orgField):
 		for attribute in subfieldpat4.findall(orgField):
@@ -763,8 +763,9 @@ def load(recs):
 		outputdict[record] = {'shelfmark': None, 'volumes': None, 'language': None, 'date1': None, 'externaldocs': [],
 		'date2': None, 'datetype': None, 'datecertain': True, 'places': [], 'format': None, 'decoration': None, 'binding': None,
 		'titles': [], 'people': {}, 'organizations': {}, 'contents': [], 'summary': None, 'origin': None, 'ownership_history': None,
-		'subjects': [], 'ds_url': None}
+		'subjects': [], 'stable_url': None, 'ds_url': None}
 		
+		outputdict[record]['stable_url'] = recs[record]['stable_url']
 
 		#get structured data from field 008
 		#print(record)
@@ -1035,11 +1036,11 @@ def load(recs):
 					#returns a tuple where 0 is the "main name" and 1 is the dictionary of retrieved values
 					
 					if ('100' in field) and (len(personData[1]['relationship']) == 0):
-						personData[1]['relationship'].append('author')
+						personData[1]['relationship'].append('Author')
 					elif ('600' in field) and (len(personData[1]['relationship']) == 0):
-						personData[1]['relationship'].append('subject')
+						personData[1]['relationship'].append('Subject')
 					elif ('700' in field) and (len(personData[1]['relationship']) == 0):
-						personData[1]['relationship'].append('associated name')
+						personData[1]['relationship'].append('Associated name')
 
 					outputdict[record]['people'][personData[0]] = personData[1]
 

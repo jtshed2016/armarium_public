@@ -7,7 +7,7 @@ sys.path.append(relpath)
 from flask import render_template, redirect, request, session, url_for, abort
 from flask.json import dumps, jsonify
 from app import app, models, db
-from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm, FeedbackForm, ChartEditForm
+from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm, FeedbackForm, ChartEditForm, NewUserForm, PasswordEditForm
 from .data_parse_and_load import load
 from base64 import b64encode, b64decode 
 
@@ -28,19 +28,14 @@ def homepage():
 	#chart_include = {chart.chartname for chart in chartrecords}
 
 	displayed_charts = [retrievedchart.chartname for retrievedchart in chartrecords]
+	#pass set of person relationship types to omit by default
 	charts = get_chart_info(displayed_charts)
-	'''
-	langdict = {}
-	centdict = {}
-	formatdict = {}
-	supportdict = {'paper': 0, 'parchment': 0, 'papyrus': 0}
-	num_vols_dict = {}
-	scriptdict = {}
-	linedict = {}
-	rulingdict = {}
-	wmsdict = {}
-	orgdict = {}
-	'''
+
+	#get lists of person relationships and active relator types for slice and dice in 'people' chart
+	active_relators = []
+	if 'people' in displayed_charts:
+		active_relators = {assoc.relator_type.name: assoc.relator_type.display for assoc in models.person_ms_assoc.query.all()}
+
 	for ms in allmss:
 		for allPlace in ms.places:
 			#count up the number of MSS from each geographic location
@@ -58,208 +53,9 @@ def homepage():
 		placeobj = dumps(placedict)
 		#need to use regex to remove quotes in json string  
 		subbedplace =re.sub(r'[\"\' ]', '', placeobj)
-		'''
-		if 'date' in chart_include:
-		#count up manuscripts from each century
-			cent = str(ms.date1/100 +1)[:2]
-
-			if cent not in centdict:
-				centdict[cent] = 1
-			else:
-				centdict[cent] += 1
-
-		#count up manuscripts in each language, format
-		if 'language' in chart_include:
-			if ms.ms_language.name not in langdict:
-				langdict[ms.ms_language.name] = {'id': ms.ms_language.id, 'count': 1}
-			else:
-				langdict[ms.ms_language.name]['count'] += 1
-
-		if 'format' in chart_include:
-			if ms.ms_format not in formatdict:
-				formatname = ms.ms_format
-				if ms.ms_format == None:
-					formatname = 'Unspecified'
-				formatdict[ms.ms_format] = {'id': formatname, 'count': 1}
-			else:
-				formatdict[ms.ms_format]['count'] += 1
-
-		if 'support' in chart_include:
-			for vol in ms.volumes:
-				if vol.support == None:
-					continue
-				for support_type in supportdict:
-					if support_type in vol.support:
-						supportdict[support_type] +=1
-
-		if 'script' in chart_include:
-			ms_scripts = set()
-			#use set to avoid duplicate script counts for multivolume MSS
-			for vol in ms.volumes:
-				for script in vol.scripts:
-					ms_scripts.add(script)
-			for ms_script in ms_scripts:
-				if ms_script.name not in scriptdict:
-					scriptdict[ms_script.name] = {'id': ms_script.id, 'count': 1}
-				else:
-					scriptdict[ms_script.name]['count'] += 1
-
-		if 'lines' in chart_include:
-			ms_lines = set()
-			for vol in ms.volumes:
-				for linesnumber in vol.lines:
-					ms_lines.add(linesnumber.id)
-			for ms_line in ms_lines:
-				if ms_line not in linedict:
-					linedict[ms_line] = 1
-				else:
-					linedict[ms_line] +=1
-
-		if 'ruling' in chart_include:
-			for vol in ms.volumes:
-				ms_rulings = set()
-				for rulingtype in vol.ruling:
-					ms_rulings.add(rulingtype)
-				for rulingmat in ms_rulings:
-					if rulingmat.name not in rulingdict:
-						rulingdict[rulingmat.name] = {'id': rulingmat.id, 'count': 1}
-					else:
-						rulingdict[rulingmat.name]['count'] +=1
-
-		if 'num_volumes' in chart_include:
-			if ms.num_volumes not in num_vols_dict:
-				num_vols_dict[ms.num_volumes] = 1
-			else:
-				num_vols_dict[ms.num_volumes] += 1
-
-		#TODO: Add subjects
-	if 'people' in chart_include:
-		allpeople = models.person.query.all()
-		peoplecountdict = {}
-
-		for eachperson in allpeople:
-			#get set of MS IDs for each person and get its length -- this is the number of MSS they are related to
-			mspersonrelcount = len(set([association.ms_id for association in eachperson.ms_relations.all()]))
-			#print eachperson.name_display
-			#print mspersonrelcount
-			peoplecountdict[eachperson.name_display] = {'count': mspersonrelcount, 'id': eachperson.id}
-
-		#"invert" dictionary so we can rank most frequent people: frequency maps to a list of people
-		countdict_inv = {}
-		for x in peoplecountdict:
-			if peoplecountdict[x]['count'] not in countdict_inv:
-				countdict_inv[peoplecountdict[x]['count']] = [{'name': x, 'id': peoplecountdict[x]['id']}]
-			else:
-				countdict_inv[peoplecountdict[x]['count']].append({'name': x, 'id': peoplecountdict[x]['id']})
-
-		sorted_dict = [(key, countdict_inv[key]) for key in sorted(countdict_inv.keys(), reverse=True)]
-		#format: [(frequency1: [name1, name2, ...]), (frequency2: [name1, name2, ...]), ...]
-
-
-		freqpeople = []
-		for personfreq in sorted_dict:
-			#print personfreq[0]
-			for ind_person in personfreq[1]:
-				
-				if len(freqpeople) < 15:
-					freqpeople.append({'name': ind_person['name'], 'id': ind_person['id'], 'frequency': personfreq[0]})
-					#print ind_person
-				else:
-					break
-
-
-	if 'watermark' in chart_include:
-		all_wms = models.watermark.query.all()
-		for wm in all_wms:
-			wmsdict[wm.id] = {'name': str(wm.id) + ' ' + wm.name, 'count': len(wm.mss.all())}
-
-	if 'organization' in chart_include:
-		all_orgs = models.organization.query.all()
-		for org in all_orgs:
-			ms_set = set()
-			for ms_rel in org.ms_relations:
-				ms_set.add(ms_rel.ms_id)
-			orgdict[org.name] = {'id': org.id, 'count': len(ms_set)}
-
-	#cent_data = {'visElement': 'langvis', 'visHolderDiv': 'langvisholder', 'toolTipDiv': 'langtooltip', 'x_axis_id': "xaxis-lang", 'x_axis_label': "Language",
-	#'y_axis_label': 'Number of Manuscripts', 'urlpath': 'mss_by_century', 'title': 'Chronology', 'context': 'The majority of manuscripts held by the Robbins Collection are early modern, as well as some medieval and newer materials.', 'data': centobj}
-	avlats = lats/len(placedict)
-	avlons = lons/len(placedict)
-	placeobj = dumps(placedict)
-	#need to use regex to remove quotes in json string  
-	subbedplace =re.sub(r'[\"\' ]', '', placeobj)
-
-
-	charts = []
-
-	for record in chartrecords:
-		chart_data = {
-		'visElement': record.qualifier + 'vis',
-		 'visHolderDiv': record.qualifier + 'visholder',
-		 'toolTipDiv': record.qualifier + 'tooltip',
-		 'x_axis_id': 'xaxis-' + record.qualifier,
-		 'x_axis_label': record.x_axis_label,
-		 'y_axis_label': record.y_axis_label,
-		 'urlpath': record.urlpath,
-		 'title': record.title,
-		 'context': record.displaytext
-		  }
-		  #assign "data" based on table
-
-		if record.chartname == 'date':
-			centobj = json.dumps([{'name': str(key) + 'th', 'frequency': centdict[key], 'id': key} for key in sorted(centdict.keys())])
-			chart_data['data']  = centobj
-
-		elif record.chartname == 'format':
-			formobj = json.dumps([{'name': formatdict[mstype]['id'], 'id': formatdict[mstype]['id'], 'frequency': formatdict[mstype]['count']} for mstype in formatdict])
-			chart_data['data'] = formobj
-
-		elif record.chartname == 'language':
-			langobj = json.dumps(sorted([{'name': key, 'frequency': langdict[key]['count'], 'id': langdict[key]['id']} for key in langdict], key=lambda lang_info: lang_info['frequency'], reverse=True))
-			chart_data['data'] = langobj
-
-		elif record.chartname == 'people':
-			peopleobj = json.dumps(freqpeople)
-
-			chart_data['data'] = peopleobj
-
-		elif record.chartname == 'support':
-			suppobj = json.dumps([{'name': supporttype, 'id': supporttype, 'frequency': supportdict[supporttype]} for supporttype in supportdict if supportdict[supporttype] > 0])
-			chart_data['data'] = suppobj
-
-		elif record.chartname == 'num_volumes':
-			volobj = json.dumps([{'name': str(volnum), 'id': volnum, 'frequency': num_vols_dict[volnum]} for volnum in num_vols_dict])
-			chart_data['data'] = volobj
-
-		elif record.chartname == 'script':
-			scriptobj = json.dumps(sorted([{'name': msscript, 'id': scriptdict[msscript]['id'], 'frequency': scriptdict[msscript]['count']} for msscript in scriptdict], key=lambda scriptinstance: scriptinstance['frequency'], reverse=True))
-			chart_data['data'] = scriptobj
-
-		elif record.chartname == 'lines':
-			lineobj = json.dumps(sorted([{'name': str(lineno), 'id': lineno, 'frequency': linedict[lineno]} for lineno in linedict], key=lambda linesno: linesno['frequency'], reverse=True))
-			chart_data['data'] = lineobj
-
-		elif record.chartname == 'ruling':
-			ruleobj = json.dumps(sorted([{'name': ruling, 'id': rulingdict[ruling]['id'], 'frequency': rulingdict[ruling]['count']} for ruling in rulingdict], key=lambda rulingtype: rulingtype['frequency'], reverse=True))
-			chart_data['data'] = ruleobj
-
-		elif record.chartname == 'watermark':
-			wmobj = json.dumps(sorted([{'name': wmsdict[wm]['name'], 'id': wm, 'frequency': wmsdict[wm]['count']} for wm in wmsdict], key=lambda thiswm: thiswm['frequency'], reverse=True))
-			chart_data['data'] = wmobj
-
-		elif record.chartname == 'organization':
-			orgobj = json.dumps(sorted([{'name': focusorg, 'id': orgdict[focusorg]['id'], 'frequency': orgdict[focusorg]['count']} for focusorg in orgdict], key=lambda orgrecord: orgrecord['frequency'], reverse=True))
-			chart_data['data'] = orgobj
-
-		elif record.chartname == 'place':
-			#use existing place dictionary
-			placechartobj = json.dumps(sorted([{'name': placename, 'id': placedict[placename]['id'], 'frequency': placedict[placename]['count']} for placename in placedict], key=lambda placeinstance: placeinstance['frequency'], reverse=True))
-			chart_data['data'] = placechartobj
-		charts.append(chart_data)
-	'''
 
 	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, #centuries = subbedcent, people = peopleobj,
-	  pagetitle = 'Manuscripts of the Robbins Collection', charts = charts)
+	  pagetitle = 'Manuscripts of the Robbins Collection', charts = charts, reltypes = active_relators)
 
 @app.route('/add_ms', methods = ['GET', 'POST'])
 def add_ms():
@@ -324,7 +120,13 @@ def ms_by_format(focusformat):
 
 @app.route('/mss_by_support_<focussupport>', methods=['GET'])
 def ms_by_support(focussupport):
-	support_vols = models.volume.query.filter(models.volume.support.like('%' + focussupport + '%')).order_by(models.volume.ms_id)
+	all_vols = models.volume.query.order_by(models.volume.ms_id).filter(models.volume.support != None)
+	#print all_vols
+	#for vol in all_vols:
+	#	if focussupport in vol.support:
+	#		print vol, vol.support, 'Yes'
+	support_vols = [supportvol for supportvol in all_vols if focussupport in supportvol.support]
+	#support_vols = models.volume.query.filter(models.volume.support.like('%' + focussupport + '%')).order_by(models.volume.ms_id)
 	support_mss = [models.manuscript.query.get(vol.ms_id) for vol in support_vols]
 	headline = focussupport.title() + ' Manuscripts'
 
@@ -390,10 +192,10 @@ def ms_view(idno):
 	for person_assoc in pagems.assoc_people:
 		if person_assoc.person_id not in relat_people:
 			relat_people[person_assoc.person_id] = {}
-			relat_people[person_assoc.person_id]['roles'] = person_assoc.assoc_type
+			relat_people[person_assoc.person_id]['roles'] = person_assoc.relator_type.name
 			relat_people[person_assoc.person_id]['name'] = person_assoc.person.name_display
 		else:
-			relat_people[person_assoc.person_id]['roles'] = relat_people[person_assoc.person_id]['roles'] + ', ' + person_assoc.assoc_type
+			relat_people[person_assoc.person_id]['roles'] = relat_people[person_assoc.person_id]['roles'] + ', ' + person_assoc.relator_type.name
 
 	#get node/link relationship data for graph	
 	graph_data = get_info_from_db(pagems.id, 'manuscript')
@@ -439,10 +241,10 @@ def view_person(personid):
 	for ms_rel in focusperson.ms_relations:
 		if ms_rel.ms_id not in mss:
 			mss[ms_rel.ms_id] = {}
-			mss[ms_rel.ms_id]['roles'] = ms_rel.assoc_type
+			mss[ms_rel.ms_id]['roles'] = ms_rel.relator_type.name
 			mss[ms_rel.ms_id]['title'] = ms_rel.ms.titles.filter_by(title_type='main').first()
 		else:
-			mss[ms_rel.ms_id]['roles'] = mss[ms_rel.ms_id]['roles'] + ', ' + ms_rel.assoc_type
+			mss[ms_rel.ms_id]['roles'] = mss[ms_rel.ms_id]['roles'] + ', ' + ms_rel.relator_type.name
 
 	return render_template('personview.html', person = focusperson, ms_rels = mss, graph = graphobj, pagetitle = focusperson.name_display + ' in the Robbins Manuscripts')
 
@@ -513,7 +315,9 @@ def list_subjects():
 	#make empty set of all associations with a person as subject; add relevant MSS, make list
 	#600
 	peoplesubjset = set()
-	person_subj_assocs = models.person_ms_assoc.query.filter_by(assoc_type='subject')
+	subject_relator_id = models.person_rel_type.query.filter_by(name='Subject').first().id
+	person_subj_assocs = models.person_ms_assoc.query.filter_by(assoc_type=subject_relator_id)
+	
 	for assoc in person_subj_assocs:
 		peoplesubjset.add(assoc.person)
 	peoplesubj= sorted([person for person in peoplesubjset], key=lambda personrecord: personrecord.name_main)
@@ -601,16 +405,6 @@ def feedback():
 		feedEmail = feedback_form.feedback_email.data
 		feedText = feedback_form.feedback_comment.data
 
-		feedMessage = MIMEText(feedText)
-		feedMessage['Subject'] = 'Comment submitted through Manuscript Exploration Portal'
-		feedMessage['From'] = feedEmail
-		feedMessage['To'] = 'jshedlock@ischool.berkeley.edu'
-
-		s = smtplib.SMTP('localhost')
-		s.sendmail(feedEmail, ['jshedlock@ischool.berkeley.edu'], feedMessage.as_string())
-		s.quit()
-
-
 		return render_template('feedback.html', sent=sent, pagetitle='Feedback Sent')
 
 
@@ -678,9 +472,9 @@ def get_info_from_db(ent_id, table):
 
 
 				person_holder[personid] = {"name": person_rel.person.name_display, "group": 1,
-			 "role": person_rel.assoc_type, "dbkey": person_rel.person.id, 'id': personid, 'date': persondates, 'url': url_for('view_person', personid=person_rel.person.id)}
+			 "role": person_rel.relator_type.name, "dbkey": person_rel.person.id, 'id': personid, 'date': persondates, 'url': url_for('view_person', personid=person_rel.person.id)}
 			else:
-				person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.assoc_type
+				person_holder[personid]['role'] = person_holder[personid]['role'] + ', ' + person_rel.relator_type.name
 			
 		#then add each person in the holder to the pagedict
 		for person in person_holder:
@@ -860,11 +654,13 @@ def get_info_from_db(ent_id, table):
 			returndict['links'].append({'source': article_id, 'target': result_id, 'value': 10})
 		return returndict
 
+
 def return_ms_data(shelf_id):
 	this_ms = models.manuscript.query.get(shelf_id)
 	resultid = '0_' + str(shelf_id)
 
-	authorquery = this_ms.assoc_people.filter_by(assoc_type = 'author').first()
+	author_id = models.person_rel_type.query.filter_by(name='Author').first().id
+	authorquery = this_ms.assoc_people.filter_by(assoc_type = author_id).first()
 	if authorquery != None:
 		result_author = authorquery.person.name_display
 	else:
@@ -883,39 +679,12 @@ def return_ms_data(shelf_id):
 	return msreturndict
 
 def get_chart_info(chartlist):
+##Need to update this to get rid of omit set and base retrieval on display value in database table
+
 	#chartlist: list of chartnames presented in display order
 	if 'people' in chartlist:
-		allpeople = models.person.query.all()
-		peoplecountdict = {}
-
-		for eachperson in allpeople:
-			#get set of MS IDs for each person and get its length -- this is the number of MSS they are related to
-			mspersonrelcount = len(set([association.ms_id for association in eachperson.ms_relations.all()]))
-			#print eachperson.name_display
-			#print mspersonrelcount
-			peoplecountdict[eachperson.name_display] = {'count': mspersonrelcount, 'id': eachperson.id}
-
-		#"invert" dictionary so we can rank most frequent people: frequency maps to a list of people
-		countdict_inv = {}
-		for x in peoplecountdict:
-			if peoplecountdict[x]['count'] not in countdict_inv:
-				countdict_inv[peoplecountdict[x]['count']] = [{'name': x, 'id': peoplecountdict[x]['id']}]
-			else:
-				countdict_inv[peoplecountdict[x]['count']].append({'name': x, 'id': peoplecountdict[x]['id']})
-
-		sorted_dict = [(key, countdict_inv[key]) for key in sorted(countdict_inv.keys(), reverse=True)]
-		#format: [(frequency1: [name1, name2, ...]), (frequency2: [name1, name2, ...]), ...]
-
-
-		freqpeople = []
-		for personfreq in sorted_dict:
-			for ind_person in personfreq[1]:
-				#if this isn't too slow, ditch and replace with max_values on rendering
-				#if len(freqpeople) < 15:
-				freqpeople.append({'name': ind_person['name'], 'id': ind_person['id'], 'frequency': personfreq[0]})
-					#print ind_person
-				#else:
-				#	break
+		allrels = models.person_ms_assoc.query.all()
+		freqpeople = [{'name': rel.person.name_display, 'id': rel.person.id, 'reltype': rel.relator_type.name} for rel in allrels]
 
 	if 'watermark' in chartlist:
 		wmsdict = {}
@@ -1049,6 +818,7 @@ def get_chart_info(chartlist):
 	for selected_chartname in chartlist:
 		displaychart = models.chart.query.filter_by(chartname=selected_chartname).first()
 		chart_data = {
+		'chartname': displaychart.chartname,
 		'visElement': displaychart.qualifier + 'vis',
 		 'visHolderDiv': displaychart.qualifier + 'visholder',
 		 'toolTipDiv': displaychart.qualifier + 'tooltip',
@@ -1117,6 +887,14 @@ def get_chart_info(chartlist):
 		returnlist.append(chart_data)
 
 	return returnlist
+
+@app.route('/deletems/<ms_id>', methods=['GET'])
+def delete_ms(ms_id):
+	#TEST
+	focusms = models.manuscript.query.get(ms_id)
+
+	db.session.delete(focusms)
+	db.session.commit()
 
 @app.route('/sendcontentsjson', methods=['GET'])
 def contents_json():
@@ -1335,6 +1113,8 @@ def edit_ms():
 		edit_ms = models.manuscript.query.get(ms_id)
 		msform = MsEditForm()
 		
+		msform.ms_language.choices = [(lang.id, lang.name) for lang in models.language.query.all()]
+
 		#assign current values as defaults
 		msform.ms_id.data = edit_ms.id
 		msform.ms_format.data = edit_ms.ms_format
@@ -1488,8 +1268,114 @@ def add_user():
 	if 'username' not in session:
 		return redirect(url_for('login_user', next='/adduser'))
 
+	adduserform = NewUserForm()
+
+	if request.method == 'GET':
+		#user visits page initially
+
+		return render_template('adduser.html', pagetitle='Add New User', userform = adduserform, errormessage = None)
 	#todo: imitate MS method, get volume to edit and then load data and form
-	return render_template('adduser.html')
+	
+	else:
+		#user sends request to generate new user
+		newusername = request.form.get('username')
+		passwordmain = request.form.get('password_main')
+		passwordcheck = request.form.get('password_check')
+
+		usernametest = models.user.query.filter_by(username=newusername).first()
+		if usernametest != None:
+			#username is already in database
+			return render_template('adduser.html', pagetitle='Username Taken', userform = adduserform, errormessage = 'Username Taken.  Please choose another.')
+		elif passwordmain != passwordcheck :
+			#passwords don't match
+			return render_template('adduser.html', pagetitle='Password Error', userform = adduserform, errormessage = 'Password fields must match.')
+		else:
+			#encode password and add new user record to database
+			#cast unicode password to string
+			passwordmain = str(passwordmain)
+
+			newsalt = os.urandom(24)
+			newpwhash = pbkdf2_hmac('sha512', passwordmain, newsalt, 100000)
+			
+			newpwhash = b64encode(newpwhash)
+			newsalt = b64encode(newsalt)
+
+			newuser = models.user(
+				username=newusername,
+				hashed_pw=newpwhash,
+				salt=newsalt)
+
+			db.session.add(newuser)
+			db.session.commit()
+
+			return render_template('submitted.html', doctype = 'New user ')
+
+@app.route('/edituser', methods=['GET', 'POST'])
+def edit_my_pw():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/edituser'))
+
+	pwform = PasswordEditForm()
+	
+	
+	if request.method == 'GET':
+		thisusername = session['username']
+		thisuser = models.user.query.filter_by(username=thisusername).first()
+		pwform.user_id.data = thisuser.id
+		return render_template('editmypw.html', pagetitle='Change My Password', curr_user = thisuser, pwform = pwform, errormessage = None)
+
+	else:
+		updated_user = models.user.query.get(request.form.get('user_id'))
+
+		if updated_user.username != session['username']:
+			abort(401)
+
+		else:
+			oldpw = request.form.get('curr_password')
+			newpw_main = request.form.get('upd_password_main')
+			newpw_check = request.form.get('upd_password_check')
+
+			#authenticate old password
+			eval_pw = str(oldpw)
+			
+			#hash and salt are stored b64encoded in database; decode to evaluate
+			dec_salt = b64decode(updated_user.salt)
+			dec_hash = b64decode(updated_user.hashed_pw)
+
+			#hash new password with retrieved salt
+			newhash = pbkdf2_hmac('sha512', eval_pw, dec_salt, 100000)
+
+			#evaluate hash of newly input password with retrieved salt against stored hash
+			if newhash != dec_hash:
+				#password is wrong: return password edit page with error message
+				#need to reassign hidden ID field after error?
+				#pwform.user_id.data = updated_user.id
+				return render_template('editmypw.html', pagetitle='Password Error', curr_user = updated_user, pwform=pwform, errormessage = 'Wrong password.  Please try again.')	
+			else:
+				#password is right; check to make sure new passwords match
+				if newpw_main != newpw_check:
+					#passwords don't match
+					return render_template('editmypw.html', pagetitle='Password Error', curr_user = updated_user, pwform=pwform, errormessage = 'Password fields must match.')
+				
+				else:
+				#hash, encode, and store salt and new pw
+					newpw_main = str(newpw_main)
+
+					newsalt = os.urandom(24)
+					newpwhash = pbkdf2_hmac('sha512', newpw_main, newsalt, 100000)
+					
+					newpwhash = b64encode(newpwhash)
+					newsalt = b64encode(newsalt)
+
+					updated_user.hashed_pw = newpwhash
+					updated_user.salt = newsalt
+
+					#db.session.add(newuser)
+					db.session.commit()
+
+					return render_template('submitted.html', doctype = 'Password changes ')			
+
+
 
 @app.route('/homesettings', methods=['GET', 'POST'])
 def homepage_settings():
@@ -1527,10 +1413,13 @@ def edit_chart(chartid):
 		chart_info.chart_y_label.data = focuschart.y_axis_label
 		chart_info.chart_text.data = focuschart.displaytext
 		chart_info.chart_max_values.data = focuschart.max_values
-		#add people_chart_roles once implemented
 
+		#get lists of person relationships and active relator types for slice and dice in 'people' chart
+		active_relators = []
+		if focuschart.chartname == 'people':
+			active_relators = {assoc.relator_type.name: assoc.relator_type.display for assoc in models.person_ms_assoc.query.all()}
 
-		return render_template('chartedit.html', pagetitle="Edit Chart Info", chartform = chart_info, chartobj = previewdata)
+		return render_template('chartedit.html', pagetitle="Edit Chart Info", chartform = chart_info, chartobj = previewdata, reltypes = active_relators)
 
 	else:
 		focuschart = models.chart.query.get(chartid)

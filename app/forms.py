@@ -59,7 +59,7 @@ class MsEditForm(Form):
 		('m', 'Multiple dates'),
 		('b', 'No dates given;B.C. date'),
 		('n', 'Dates unknown')])
-	ms_language = StringField('language')
+	ms_language = SelectField('language', coerce=int, validators=[DataRequired()])
 	ms_summary = TextAreaField('summary')
 	ms_ownership = TextAreaField('ownership_history')
 	ms_origin = TextAreaField('origin')
@@ -107,4 +107,15 @@ class ChartEditForm(Form):
 	chart_text = TextAreaField('chart_text')
 	chart_max_values = IntegerField('chart_max_values')
 	people_chart_roles = SelectMultipleField('people_roles', coerce=int)
+
+class NewUserForm(Form):
+	username = StringField('username', validators=[DataRequired()])
+	password_main = PasswordField('password_main', validators=[DataRequired()])
+	password_check = PasswordField('password_check', validators=[DataRequired()])
+
+class PasswordEditForm(Form):
+	user_id = HiddenField('user_id')
+	curr_password = PasswordField('password_main', validators=[DataRequired()])
+	upd_password_main = PasswordField('password_main', validators=[DataRequired()])
+	upd_password_check = PasswordField('password_check', validators=[DataRequired()])	
 

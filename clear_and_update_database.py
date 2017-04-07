@@ -8,7 +8,7 @@ import data_parse_and_load
 import os, sys, json
 
 fairwarning = raw_input('WARNING: This script will erase all data, including that which it may not be possible to automatically regenerate.  Do you want to continue? (Y/N)\n').upper()
-if fairwarning == 'N':
+if fairwarning != 'Y':
 	exit()
 
 
@@ -16,10 +16,11 @@ if fairwarning == 'N':
 db.drop_all()
 db.create_all()
 
+
 relpath = os.path.dirname(__file__)
 sys.path.append(relpath)
-
-sourcefile = os.path.join(relpath, 'app/trial_II160119.json')
+#sourcefile = os.path.join(relpath, 'app/half_2.json')
+sourcefile = os.path.join(relpath, 'app/source04062017.json')
 sourceobj = open(sourcefile)
 sourcedict = json.load(sourceobj)
 sourceobj.close()
@@ -48,15 +49,47 @@ for tabledict in chartinfo['tables']:
 	db.session.add(newtable)
 	db.session.commit()
 
+
+#populate table of relations
+relatortermsname = os.path.join(relpath, 'app/static/locrelcodes.json')
+relatortermsobj = open(relatortermsname, 'r')
+relatorterms = json.load(relatortermsobj)
+relatortermsobj.close()
+
+for relatorterm in relatorterms:
+	#don't display former owners, owners, or associated names
+	if relatorterm in {'asn', 'own', 'fmo'}:
+		reldisplay = False
+	else:
+		reldisplay = True
+	
+	newrelator = models.person_rel_type(
+		name = relatorterms[relatorterm],
+		abbrev = relatorterm,
+		display = reldisplay
+		)
+
+	db.session.add(newrelator)
+
+subjrelator = models.person_rel_type(
+	name='Subject',
+	abbrev = 'sub',
+	display = False)
+
+db.session.add(subjrelator)
+db.session.commit()
+
+
 #parse data
 allrecs = data_parse_and_load.load(sourcedict)
 
 print 'Loading to DB'
 #load mss into database
 for record in allrecs:
-	if record == 'RobbinsMSCould not find valid shelfmark':
+	print record, allrecs[record]['shelfmark']
+	if record == ('RobbinsMSCould not find valid shelfmark') or (record =='Could not find valid shelfmark'):
 		continue
-	print record
+	
 	if ((allrecs[record]['format'] == '') or (allrecs[record]['format'] == None)):
 		thismsformat = 'unspecified'
 	else:
@@ -69,13 +102,13 @@ for record in allrecs:
 		date1 = allrecs[record]['date1'],
 		date2 = allrecs[record]['date2'],
 		datetype = allrecs[record]['datetype'],
-		#language = allrecs[record]['language'],
 		num_volumes = allrecs[record]['volumes'],
 		summary = allrecs[record]['summary'],
 		ownership_history = allrecs[record]['ownership_history'],
 		origin = allrecs[record]['origin'],
 		decoration = allrecs[record]['decoration'],
 		binding = allrecs[record]['binding'],
+		catalog_url = allrecs[record]['stable_url'],
 		ds_url = allrecs[record]['ds_url']
 		)
 	db.session.add(ms)
@@ -223,20 +256,31 @@ for record in allrecs:
 			#new query of newly committed person entity to get ID
 			newPersonRecord = models.person.query.filter_by(name_main=person).first()
 			for rel in allrecs[record]['people'][person]['relationship']:
+				#print rel
+				relator_type_record = models.person_rel_type.query.filter(models.person_rel_type.name.ilike(rel)).first()
+				rel_id = relator_type_record.id
+
 				relRec = models.person_ms_assoc(
 					person_id = newPersonRecord.id,
 					ms_id = ms.id,
-					assoc_type = rel
+					assoc_type = rel_id
+					#role_relation = relator_type_record
+
 					)
 				db.session.add(relRec)
 				db.session.commit()
 
 		else:
 			for rel in allrecs[record]['people'][person]['relationship']:
+				#print rel
+				relator_type_record = models.person_rel_type.query.filter(models.person_rel_type.name.ilike(rel)).first()
+				rel_id = relator_type_record.id
+
 				relRec = models.person_ms_assoc(
 					person_id = personQuery.id,
 					ms_id = ms.id,
-					assoc_type = rel
+					assoc_type = rel_id
+					#role_relation = relator_type_record
 					)
 				db.session.add(relRec)
 				db.session.commit()

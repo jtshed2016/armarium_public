@@ -214,8 +214,13 @@
 <br>
 {% endif %}
 
+{% if ms.catalog_url %}
+<p><a href="{{ms.catalog_url}}" target="blank" rel="noopener noreferrer">View Catalog Record</a></p>
+<br>
+{% endif %}
+
 {% if ms.ds_url %}
-<p><a href="{{ms.ds_url}}">View images</a> at Digital Scriptorium</p>
+<p><a href="{{ms.ds_url}}" target="blank" rel="noopener noreferrer">View images</a> at Digital Scriptorium</p>
 {% endif %}
 </div>
 

@@ -1,5 +1,16 @@
 {% extends "adminbase.html" %}
 
 {% block content %}
-<h3>Placeholder - User Add Page Goes Here</h3>
+<h3>Add New Administrator</h3>
+<div class="content">
+	<form method="post" action="">
+		<p>New Username:  {{ userform.username }}</p>
+		<p>Password: {{ userform.password_main }}</p>
+		<p>Re-enter Password: {{ userform.password_check }}</p>
+	{% if errormessage != None %}
+		<p>{{ errormessage }}</p>
+	{% endif %}
+	<input type="submit" id="usersubmit" value="Add User" disabled>
+</div>
+
 {% endblock %}

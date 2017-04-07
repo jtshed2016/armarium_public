@@ -1,6 +1,7 @@
 {% extends 'adminbase.html' %}
 {% block javascript %}
 <script>
+	chartName = "{{ chartobj['chartname'] }}"
 	targetDiv = "{{ chartobj['visElement'] }}"
 	targetTip = "{{ chartobj['toolTipDiv'] }}"
 	x_id = "{{ chartobj['x_axis_id'] }}"
@@ -34,7 +35,12 @@
 
 
 	<div class="section" id="{{ chartobj['visHolderDiv'] }}">
-		<div id="{{ chartobj['toolTipDiv'] }}" class="tooltip"></div>
+	{% if chartobj['chartname'] == 'people' %}
+		<script>
+		includeRels = {{ reltypes|tojson }}
+		</script>
+	{% endif %}		
+	<div id="{{ chartobj['toolTipDiv'] }}" class="tooltip"></div>
 		<svg id="{{ chartobj['visElement'] }}" width="400" height="300"></svg>
 		<div class="viscontext">
 		<h3>{{ chartobj['title'] }}</h3>

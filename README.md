@@ -73,7 +73,11 @@ Enable the application (armarium) and disable the default site.  Reload server.
 `a2ensite armarium`  
 `service apache2 reload`  
 
-
+The application includes the script `dbupdate.py` that will send a request to the LawCat catalog using the query "robbins ms" to retrieve all manuscript records, parse them, and add them to the database.  In order to update the database automatically with any new manuscripts, this should be added to the server's crontab file to run on a daily basis (or as desired):
+Open crontab:
+`crontab -e`
+Add the following line, save, and quit (this will run daily at 6:00 AM; modify as desired):
+`0 6 * * * /var/www/armarium_public/dbpudate.py`
 
 At this point, the application should be functioning and available from the root of the domain.  
 

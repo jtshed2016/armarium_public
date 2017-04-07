@@ -66,12 +66,27 @@
 		<h3>{{ chartobj['title'] }}</h3>
 		<p>{{ chartobj['context'] }}</p>
 		</div>
+		{% if chartobj['chartname'] == 'people' %}
+		<form id="relselect">
+			<em>Display:</em>
+			{% for reltype in reltypes %}
+			<input type="checkbox" class="roleselect" name="{{ reltype }}" value="{{ reltype }}" {% if reltypes[reltype] == True %} checked="checked" {% endif %}>
+			<label for="{{reltype}}">{{reltype}}</label>
+			{% endfor %}
+		</form>
+		{% endif %}
 	</div>
 
 	<script>
-	sourceData = {{ chartobj['data']|safe }}
+	{% if chartobj['chartname'] == 'people' %}
+	includeRels = {{ reltypes|tojson }}
+	{% endif %}
 	
-	renderHomeChart("#{{ chartobj['visElement'] }}", "#{{ chartobj['toolTipDiv'] }}", "{{ chartobj['x_axis_id'] }}", "{{ chartobj['x_axis_label'] }}", "{{ chartobj['y_axis_label'] }}", sourceData, "{{ chartobj['urlpath'] }}", "{{chartobj['max_values']}}");
+	{{ chartobj['chartname'] + 'chartInfo' }} = {'chartName': "{{chartobj['chartname'] }}", 'visDiv': "{{ chartobj['visElement'] }}", 'toolTipDiv': "{{ chartobj['toolTipDiv'] }}", 'x_axis_id': "{{ chartobj['x_axis_id'] }}", 'x_axis_label': "{{ chartobj['x_axis_label'] }}", 'y_axis_label': "{{ chartobj['y_axis_label'] }}", 'maxValues':  "{{chartobj['max_values']}}", 'urlpath': "{{ chartobj['urlpath'] }}"}
+	sourceData = {{ chartobj['data']|safe }}
+
+	renderHomeChart({{ chartobj['chartname'] + 'chartInfo' }}['chartName'], '#' + {{ chartobj['chartname'] + 'chartInfo' }}['visDiv'], '#' + {{ chartobj['chartname'] + 'chartInfo' }}['toolTipDiv'], {{ chartobj['chartname'] + 'chartInfo' }}['x_axis_id'], {{ chartobj['chartname'] + 'chartInfo' }}['x_axis_label'], {{ chartobj['chartname'] + 'chartInfo' }}['y_axis_label'], sourceData, {{ chartobj['chartname'] + 'chartInfo' }}['urlpath'], {{ chartobj['chartname'] + 'chartInfo' }}['maxValues']);
+
 	</script>
 
 	{% endfor %}

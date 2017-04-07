@@ -79,15 +79,18 @@ class manuscript(db.Model):
 	decoration = db.Column(db.String(1000))
 	binding = db.Column(db.String(1000))
 	num_volumes = db.Column(db.Integer)
+	catalog_url = db.Column(db.String(1000))
 	ds_url = db.Column(db.String(1000))
 	#relationships
 	volumes = db.relationship('volume',
+		cascade = 'delete, delete-orphan',
 		backref = 'ms',
 		lazy='dynamic')
 	contents = db.relationship('content_item', 
 		backref = 'ms', 
 		lazy='dynamic')
 	titles = db.relationship('title', 
+		cascade = 'delete, delete-orphan',
 		backref = 'ms', 
 		lazy='dynamic'
 		)
@@ -96,6 +99,7 @@ class manuscript(db.Model):
 		backref = db.backref('mss', lazy='dynamic')
 		)
 	assoc_people = db.relationship('person_ms_assoc',
+		cascade = 'delete, delete-orphan',
 		backref = 'ms',
 		lazy='dynamic')
 	places = db.relationship('place',
@@ -103,6 +107,7 @@ class manuscript(db.Model):
 		backref = db.backref('mss', lazy='dynamic')
 		)
 	orgs = db.relationship('org_ms_assoc',
+		cascade = 'delete, delete-orphan',
 		backref= 'ms', 
 		lazy='dynamic')
 	treatments = db.relationship('external_doc',
@@ -136,7 +141,8 @@ class volume(db.Model):
 	phys_arrangement = db.Column(db.String(60))
 	narr_script = db.Column(db.String(1000))
 	#500 script, free text
-	contents = db.relationship('content_item', 
+	contents = db.relationship('content_item',
+		cascade = 'delete, delete-orphan', 
 		backref = 'volume', 
 		lazy='dynamic')
 	scripts = db.relationship('script',
@@ -194,7 +200,8 @@ class person(db.Model):
 	#profess = span of professional activity, century = only century specified
 	numeration = db.Column(db.String(20))
 	title = db.Column(db.String(30))
-	ms_relations = db.relationship('person_ms_assoc', 
+	ms_relations = db.relationship('person_ms_assoc',
+		cascade = 'delete, delete-orphan',
 		backref = 'person', 
 		lazy='dynamic')
 
@@ -207,17 +214,34 @@ class person_ms_assoc(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	person_id = db.Column(db.Integer, db.ForeignKey('person.id'))
 	ms_id = db.Column(db.Integer, db.ForeignKey('manuscript.id'))
-	assoc_type = db.Column(db.String(50))
+	#assoc_type = db.Column(db.String(50))
+	assoc_type = db.Column(db.Integer, db.ForeignKey('person_rel_type.id'))
+	#role_relation = db.relationship('person_rel_type',
+	#	backref = 'people',
+	#	lazy='dynamic')
 
 	def __repr__(self):
 		return '<person_ms_assoc ' + str(self.id) + '>'
 
+class person_rel_type(db.Model):
+	id = db.Column(db.Integer, primary_key = True)
+	name = db.Column(db.String(50))
+	abbrev = db.Column(db.String(3))
+	display = db.Column(db.Boolean)
+	role_relation = db.relationship('person_ms_assoc',
+		backref = 'relator_type',
+		lazy = 'dynamic')
+
+
+	def __repr__(self):
+		return '<role ' + self.name + '>'
 #an organization that is the subject, author, or publisher 
 #of or otherwise associated with a manuscript, or a state
 class organization(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(50))
 	ms_relations = db.relationship('org_ms_assoc',
+		cascade = 'delete, delete-orphan',
 		backref='org',
 		lazy='dynamic')
 
@@ -352,6 +376,7 @@ class subject(db.Model):
 	subj_name = db.Column(db.String(100))
 	subj_type = db.Column(db.String(50))
 	main_sub_relationship = db.relationship('ms_subject_assoc', 
+		cascade = 'delete, delete-orphan',
 		backref='subjects', 
 		lazy='dynamic')
 	
@@ -389,4 +414,19 @@ class chart(db.Model):
 	def __repr__(self):
 		return '<chart ' + self.chartname + '>'
 
+class hometext(db.Model):
+	#store info for welcome text on home page...really only needs one record
+	id = db.Column(db.Integer, primary_key = True)
+	displaytext = db.Column(db.String(1000))
 
+	def __repr__(self):
+		return '<hometext ' + str(self.id) + '>'
+
+class comment(db.Model):
+	#store comments left by users through feedback function
+	id = db.Column(db.Integer, primary_key = True)
+	commenter_name = db.Column(db.String(75))
+	commenter_address = db.Column(db.String(75))
+	comment_text = db.Column(db.String(1000))
+	comment_date = db.Column(db.DateTime)
+	comment_read = db.Column(db.Boolean)

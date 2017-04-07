@@ -1,0 +1,18 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<h3>Change My Password</h3>
+<div class="content">
+	<form method="post" action="">
+		<p>User:  {{ curr_user.username }}</p>
+		<p>Current Password: {{ pwform.curr_password }}</p>
+		<p>New Password: {{ pwform.upd_password_main }}</p>
+		<p>Re-enter New Password: {{ pwform.upd_password_check }}</p>
+		{{ pwform.user_id }}
+	{% if errormessage != None %}
+		<p>{{ errormessage }}</p>
+	{% endif %}
+	<input type="submit" id="usersubmit" value="Change Password" disabled>
+</div>
+
+{% endblock %}

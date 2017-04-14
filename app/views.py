@@ -467,7 +467,49 @@ def send_json():
 	result_dict = get_info_from_db(ent_id, table)
 
 	return jsonify(result_dict)
+
+@app.route('/entity_edit_select', methods = ['GET'])
+def pick_edit_table():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/entity_edit_select'))
+
+	headline = 'Select Entity Type to Edit'
+
+	return render_template('entitymenu.html', headline=headline)
+
+@app.route('/entitymenu', methods=['GET'])
+def pick_entity_to_edit():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/entity_edit_select'))
+
+	entitytype = request.args.get('entity')
+
+	if entitytype == 'title':
+		entityarray = models.title.query.order_by(models.title.ms_id).all()
+
+	elif entitytype == 'watermark':
+		entityarray = models.watermark.query.order_by(models.watermark.id).all()
+
+	elif entitytype == 'language':
+		entityarray = models.language.query.order_by(models.language.id).all()
+
+	elif entitytype == 'line':
+		entityarray = models.lines.query.order_by(models.lines.id).all()
+
+	elif entitytype == 'script':
+		entityarray = models.script.query.order_by(models.script.id).all()
+
+	elif entitytype == 'ruling':
+		entityarray = models.ruling.query.order_by(models.ruling.id).all()
 	
+	elif entitytype == 'place':
+		entityarray = models.place.query.order_by(models.place.id).all()
+
+	elif entitytype == 'subject':
+		entityarray = models.subject.query.order_by(models.subject.id).all()
+
+	return render_template('specific_entity_menu.html', pagetitle='Edit ' + entitytype, entityarray=entityarray, entitytype=entitytype)
+
 @app.route('/edit_entity', methods=['GET', 'POST'])
 def edit_entity():
 	if 'username' not in session:
@@ -614,7 +656,7 @@ def create_entity():
 			entitytype = 'subject'
 			createForm = SubjectForm()
 
-		return render_template('entity_edit.html', entitytype = entitytype, createForm = createForm, dbid = dbid)
+		return render_template('entity_create.html', entitytype = entitytype, createForm = createForm, dbid = dbid)
 
 	else:
 		entitytype = request.args.get('entity')
@@ -688,6 +730,7 @@ def create_entity():
 
 @app.route('/delete_entity', methods=['DELETE'])
 def delete_entity():
+	#not yet implemented
 	if 'username' not in session:
 		abort(401)	
 	valuemap = {'manuscript': models.manuscript, 'volume': models.volume, 'content_item': models.content_item, 

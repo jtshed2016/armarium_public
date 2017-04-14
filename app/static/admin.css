@@ -103,6 +103,10 @@ table, th, td {
 	padding: 3px;
 }
 
+th {
+	font-weight: bold;
+}
+
 .content {
 	border-color: #1a1aff;
 	border-width: 2px;

@@ -1,5 +1,5 @@
 from flask.ext.wtf import Form
-from wtforms import StringField, IntegerField, SelectField, SelectMultipleField, FloatField, PasswordField, TextAreaField, HiddenField
+from wtforms import StringField, IntegerField, SelectField, SelectMultipleField, FloatField, PasswordField, TextAreaField, HiddenField, BooleanField
 from flask_wtf.html5 import EmailField
 from wtforms.validators import DataRequired, InputRequired
 
@@ -7,10 +7,6 @@ class MsForm(Form):
 	shelfmark = StringField('shelfmark', validators=[DataRequired()])
 	mstitle = StringField('mstitle', validators=[DataRequired()])
 	mstitle_var = StringField('mstitle')
-
-
-class SearchForm(Form):
-	searchfield = StringField('query', validators=[DataRequired()])
 
 class ExtDocForm(Form):
 	ex_ref_ms = SelectMultipleField('ex_ref_ms', coerce=int, validators=[DataRequired()])
@@ -65,7 +61,6 @@ class MsEditForm(Form):
 	ms_origin = TextAreaField('origin')
 	ms_decoration = TextAreaField('decoration')
 	ms_binding = TextAreaField('binding')
-	#Things relating to other entities -- volumes, titles -- omitted for now
 
 class VolEditForm(Form):
 	vol_id = HiddenField('vol_id')
@@ -94,6 +89,46 @@ class ContentEditForm(Form):
 	fol_end_side = SelectField('fol_end_side', choices = [('v', 'Verso'), ('r', 'Recto')])
 	fol_text = TextAreaField('content_item_text')
 
+###
+class TitleForm(Form):
+	ms_id = SelectField('ms_id', coerce=int)
+	title_id = HiddenField('title_id')
+	title_text = StringField('title_text')
+	title_type = SelectField('title_type', choices = [('main', 'Main'), ('secundo', 'Secundo folio'), ('uniform', 'Uniform title'), ('varying', 'Varying')])
+
+class WatermarkForm(Form):
+	wmid = IntegerField('briquet_number')
+	name = StringField('watermark_name')
+
+class LanguageForm(Form):
+	lang_id = HiddenField('lang_id')
+	lang_name = StringField('lang_name')
+
+class LineForm(Form):
+	num_lines = IntegerField('num_lines')
+
+class ScriptForm(Form):
+	script_id = HiddenField('script_id')
+	script_name = StringField('script_name')
+
+class RulingForm(Form):
+	ruling_id = HiddenField('script_id')
+	ruling_type = StringField('ruling_type')
+
+class PlaceForm(Form):
+	place_id = HiddenField('place_id')
+	place_name = StringField('place_name')
+	place_type = SelectField('place_type', choices=[('area', 'City or region'), ('country', 'State or nation')])
+	latitude = FloatField('latitude')
+	longitude = FloatField('longitude')
+
+class SubjectForm(Form):
+	subect_id = HiddenField('subject_id')
+	subject_name = StringField('subject_name')
+	subject_type = SelectField('subject_type', choices = [('topic', 'Topical Term'), ('place', 'Geographical Term'), ('chronology', 'Chronological Term'), ('uniform title', 'Uniform Title'), ('form', 'Genre/Form'), ('meeting', 'Meeting Name')])
+
+
+###
 class FeedbackForm(Form):
 	feedback_name = StringField('feedback_name')
 	feedback_email = StringField('feedback_email')
@@ -117,5 +152,8 @@ class PasswordEditForm(Form):
 	user_id = HiddenField('user_id')
 	curr_password = PasswordField('password_main', validators=[DataRequired()])
 	upd_password_main = PasswordField('password_main', validators=[DataRequired()])
-	upd_password_check = PasswordField('password_check', validators=[DataRequired()])	
+	upd_password_check = PasswordField('password_check', validators=[DataRequired()])
+
+class HometextForm(Form):
+	text_content = TextAreaField('text_content')
 

@@ -140,12 +140,12 @@ if __name__ == '__main__':
 		item_dict['stable_url'] = record['stable_url']
 		output_dict[record_shelfmark] = item_dict
 
-
+	'''
 	newsourceobj = open('source04062017.json', 'w')
 	json.dump(output_dict, newsourceobj)
 	newsourceobj.close()
 	exit()
-
+	'''
 
 	###Select data to parse and ingest: only use new records
 
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 	#print new_ids
 	additions = new_ids.difference(current_ids)
 
-	#print additions
+	print additions
 	'''
 	go_ahead = raw_input('Continue parsing and loading data?  (Y/N)')
 	if go_ahead.lower() != 'y':
@@ -345,20 +345,28 @@ if __name__ == '__main__':
 				#new query of newly committed person entity to get ID
 				newPersonRecord = models.person.query.filter_by(name_main=person).first()
 				for rel in parsed_data[parsed_record]['people'][person]['relationship']:
+					
+					relator_type_record = models.person_rel_type.query.filter(models.person_rel_type.name.ilike(rel)).first()
+					rel_id = relator_type_record.id
+
 					relRec = models.person_ms_assoc(
 						person_id = newPersonRecord.id,
 						ms_id = ms.id,
-						assoc_type = rel
+						assoc_type = rel_id
 						)
 					db.session.add(relRec)
 					db.session.commit()
 
 			else:
 				for rel in parsed_data[parsed_record]['people'][person]['relationship']:
+					
+					relator_type_record = models.person_rel_type.query.filter(models.person_rel_type.name.ilike(rel)).first()
+					rel_id = relator_type_record.id
+
 					relRec = models.person_ms_assoc(
 						person_id = personQuery.id,
 						ms_id = ms.id,
-						assoc_type = rel
+						assoc_type = rel_id
 						)
 					db.session.add(relRec)
 					db.session.commit()

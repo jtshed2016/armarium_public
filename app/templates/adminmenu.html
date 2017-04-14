@@ -6,33 +6,44 @@
 	<div class="content">
 		<a href="{{ url_for('homepage_settings') }}">Edit Homepage Charts</a>
 	</div>
-</div>
-<br>
-<div class="content">
-	<h4>Manage Data</h4>
 	<div class="content">
-		<a href="{{ url_for('edit_ms') }}">Edit Manuscript</a>
-	</div>
-	<div class="content">
-		<a href="{{ url_for('edit_volume') }}">Edit MS Volume</a>
-	</div>
-	<div class="content">
-		<a href="{{ url_for('edit_contents') }}" >Edit MS text item</a>
-	</div>
-	<div class="content">
-		<a href="{{ url_for('add_ex_doc') }}">Add External Document</a>
+		<a href="{{ url_for('edit_home_text') }}">Edit Homepage Text</a>
 	</div>
 </div>
-<br>
-<div class="content">
-	<h4>Manage Users</h4>
+	<br>
 	<div class="content">
-		<a href="{{ url_for('edit_my_pw') }}">Change My Password</a>
+		<h4>Manage Data</h4>
+		<div class="content">
+			<a href="{{ url_for('edit_ms') }}">Edit Manuscript</a>
+		</div>
+		<div class="content">
+			<a href="{{ url_for('edit_volume') }}">Edit MS Volume</a>
+		</div>
+		<div class="content">
+			<a href="{{ url_for('edit_contents') }}" >Edit MS text item</a>
+		</div>
+		<div class="content">
+			<a href="{{ url_for('add_ex_doc') }}">Add External Document</a>
+		</div>
+	</div>
+	<br>
+	<div class="content">
+		<h4>Manage Users</h4>
+		<div class="content">
+			<a href="{{ url_for('edit_my_pw') }}">Change My Password</a>
+		</div>
+		<div class="content">
+			<a href="{{ url_for('add_user') }}">Add User</a>
+		</div>
 	</div>
 	<div class="content">
-		<a href="{{ url_for('add_user') }}">Add User</a>
-	</div>
-</div>
+		<h4>Feedback</h4>
+		<div class="content">
+			<a href="{{ url_for('view_feedback') }}">See site feedback ({{ unread_comments }} unread comments)</a>
+		</div>
+	</div>	
+
+
 </div>
 
 

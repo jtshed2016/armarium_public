@@ -68,7 +68,7 @@ h4 {
 	font-size: 1.25em;
 }
 
-input, textarea, select {
+input, textarea, select, button {
 	background-color: #bfbfbf;
 	border-color: #ffffff;
 	border-width: 5px

@@ -1,5 +1,6 @@
 import os, sys, json, re
 from fastpbkdf2 import pbkdf2_hmac
+from datetime import datetime
 
 relpath = os.path.dirname(__file__)
 sys.path.append(relpath)
@@ -7,10 +8,9 @@ sys.path.append(relpath)
 from flask import render_template, redirect, request, session, url_for, abort
 from flask.json import dumps, jsonify
 from app import app, models, db
-from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm, FeedbackForm, ChartEditForm, NewUserForm, PasswordEditForm
+from .forms import ExtDocForm, LoginForm, ItemSelectForm, MsEditForm, VolEditForm, ContentEditForm, TitleForm, WatermarkForm, LanguageForm, LineForm, ScriptForm, RulingForm, PlaceForm, SubjectForm, FeedbackForm, ChartEditForm, NewUserForm, PasswordEditForm, HometextForm
 from .data_parse_and_load import load
 from base64 import b64encode, b64decode 
-
 from sqlalchemy import func, distinct
 
 @app.route('/')
@@ -51,11 +51,11 @@ def homepage():
 		avlats = lats/len(placedict)
 		avlons = lons/len(placedict)
 		placeobj = dumps(placedict)
-		#need to use regex to remove quotes in json string  
-		subbedplace =re.sub(r'[\"\' ]', '', placeobj)
 
-	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = subbedplace, #centuries = subbedcent, people = peopleobj,
-	  pagetitle = 'Manuscripts of the Robbins Collection', charts = charts, reltypes = active_relators)
+	home_display_text = models.hometext.query.first()
+
+	return render_template('home.html', avgLat = avlats, avgLon = avlons, places = placeobj,
+	  pagetitle = 'Manuscripts of the Robbins Collection', charts = charts, reltypes = active_relators, hometext = home_display_text)
 
 @app.route('/add_ms', methods = ['GET', 'POST'])
 def add_ms():
@@ -324,7 +324,7 @@ def list_subjects():
 
 	#610
 	orgsubjset = set()
-	org_subj_assocs = models.org_ms_assoc.query.filter_by(relationship='subject')
+	org_subj_assocs = models.org_ms_assoc.query.filter_by(relationship='Subject')
 	for org_assoc in org_subj_assocs:
 		orgsubjset.add(org_assoc.org)
 	orgsubj = sorted([org for org in orgsubjset], key = lambda orgrecord: orgrecord.name)
@@ -387,28 +387,76 @@ def about():
 	pagetitle = 'About the Project'
 	return render_template('about.html', pagetitle = pagetitle)
 
-@app.route('/feedback', methods=['GET', 'POST'])
+@app.route('/feedback', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def feedback():
-	#need to deal with SMTP server here, otherwise this won't work
-	#put into database instead?
+	if 'username' not in session:
+		abort(401)	
+
 	pagetitle = 'Feedback'
 	feedback_form = FeedbackForm()
 
 	if request.method == 'GET':
+		#get feedback form
 		sent = False
 		return render_template('feedback.html', form=feedback_form, sent=sent, pagetitle=pagetitle)
 	
 	if request.method == 'POST':
-		#replace this with load to database
+		#create new comment
 		sent = True
 		feedName = feedback_form.feedback_name.data
 		feedEmail = feedback_form.feedback_email.data
 		feedText = feedback_form.feedback_comment.data
 
+		newFeedback = models.comment(
+			commenter_name = feedName,
+			commenter_address = feedEmail,
+			comment_text = feedText,
+			comment_date = datetime.today(),
+			comment_read = False)
+
+		db.session.add(newFeedback)
+		db.session.commit()
+
 		return render_template('feedback.html', sent=sent, pagetitle='Feedback Sent')
 
+	if request.method == 'PUT':
+		#mark as read
+		#intended for asynchronous call, doesn't return view
+		commentid = request.form.get('id')
+		focuscomment = models.comment.query.get(commentid)
+		focuscomment.comment_read = True
+		db.session.add(focuscomment)
+		db.session.commit()
+		return 'Success'
 
 
+	if request.method == 'DELETE':
+		#delete comment
+		#intended for asynchronous call, doesn't return view
+		commentid = request.form.get('id')
+		focuscomment = models.comment.query.get(commentid)
+		db.session.delete(focuscomment)
+		db.session.commit() 
+		return 'Success'
+
+@app.route('/view_feedback', methods = ['GET'])
+def view_feedback():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/view_feedback'))
+
+	allfeedback = models.comment.query.order_by(models.comment.comment_date).all()
+
+	return render_template('view_feedback.html', comments=allfeedback)
+
+@app.route('/markread/<commentid>', methods = ['PUT'])
+def mark_as_read(commentid):
+	if 'username' not in session:
+		abort(401)	
+
+	focuscomment = models.comment.get(commentid)
+	focuscomment.read = True
+	db.session.add(focuscomment)
+	db.session.commit()
 
 @app.route('/sendjson', methods = ['GET'])
 def send_json():
@@ -420,6 +468,238 @@ def send_json():
 
 	return jsonify(result_dict)
 	
+@app.route('/edit_entity', methods=['GET', 'POST'])
+def edit_entity():
+	if 'username' not in session:
+		abort(401)	
+	valuemap = {'manuscript': models.manuscript, 'volume': models.volume, 'content_item': models.content_item, 
+	'person': models.person, 'watermark': models.watermark,'place': models.place, 'org': models.organization, 
+	'exdoc': models.external_doc, 'exwork': models.external_work, 'title': models.title, 'script': models.script,
+	'ruling': models.ruling, 'language': models.language, 'subject': models.subject, 'line': models.lines}
+
+	focus_table = request.args.get('table')
+	ent_id = request.args.get('id')
+
+	focusitem = valuemap[focus_table].query.get(int(ent_id))
+
+	if request.method == 'GET':
+		#retrieve item for editing
+		if request.args.get('table') == 'title':
+			
+			msoptions = [(ms.id, (str(ms.id))) for ms in models.manuscript.query.all()]
+			updateForm = TitleForm()
+			updateForm.ms_id.choices = msoptions
+			updateForm.title_text.data = focusitem.title_text
+			updateForm.title_type.data = focusitem.title_type
+			updateForm.ms_id.data = focusitem.ms_id
+
+
+		elif request.args.get('table') == 'watermark':
+			
+			updateForm = WatermarkForm()
+			updateForm.wmid.data = focusitem.id
+			updateForm.name.data = focusitem.name
+
+		elif request.args.get('table') == 'language':
+			updateForm = LanguageForm()
+			updateForm.lang_name.data = focusitem.name
+
+		elif request.args.get('table') == 'line':
+			updateForm = LineForm()
+			updateForm.num_lines.data = focusitem.id
+
+		elif request.args.get('table') == 'script':
+			updateForm = ScriptForm()
+			updateForm.script_name.data =focusitem.name
+
+		elif request.args.get('table') == 'ruling':
+			updateForm = RulingForm()
+			updateForm.ruling_type.data = focusitem.name
+
+		elif request.args.get('table') == 'place':
+			updateForm = PlaceForm()
+			updateForm.place_name.data = focusitem.place_name
+			updateForm.place_type.data = focusitem.place_type
+			updateForm.latitude.data = focusitem.lat
+			updateForm.longitude.data = focusitem.lon
+
+		elif request.args.get('table') == 'subject':
+			updateForm = SubjectForm()
+			updateForm.subject_name.data = focusitem.subj_name
+			updateForm.subject_type.data = focusitem.subj_type
+
+		return render_template('entity_edit.html', entitytype = request.args.get('table'), createForm = updateForm)
+
+	else:
+		#send back data to DB
+		if request.args.get('table') == 'title':
+			
+			focusitem.title_text = request.form.get('title_text')
+			focusitem.title_type = request.form.get('title_type')
+			focusitem.ms_id = request.form.get('ms_id')
+
+		elif request.args.get('table') == 'watermark':
+			
+			focusitem.id = request.form.get('wmid')
+			focusitem.name = request.form.get('name')
+			focusitem.url = 'http://www.ksbm.oeaw.ac.at/_scripts/php/loadRepWmark.php?rep=briquet&refnr=' + request.form.get('wmid') + '&lang=fr'
+
+		elif request.args.get('table') == 'language':
+			focusitem.name = request.form.get('lang_name')
+
+		elif request.args.get('table') == 'line':
+			focusitem.id = request.form.get('num_lines')
+
+		elif request.args.get('table') == 'script':
+			focusitem.name = request.form.get('script_name')
+
+		elif request.args.get('table') == 'ruling':
+			updateForm.ruling_type.data = focusitem.name
+
+		elif request.args.get('table') == 'place':
+			focusitem.place_name = request.form.get('place_name')
+			focusitem.place_type = request.form.get('place_type')
+			focusitem.lat = request.form.get('latitude')
+			focusitem.lon = request.form.get('longitude')
+
+		elif request.args.get('table') == 'subject':
+			focusitem.subj_name = request.form.get('subject_name')
+			focusitem.subj_type = request.form.get('subject_type')
+
+		db.session.add(focusitem)
+		db.session.commit()
+
+		return render_template('submitted.html', pagetitle = "Item Updated", doctype = request.args.get('table'))
+
+@app.route('/create_entity', methods=['GET', 'POST'])
+def create_entity():
+	if 'username' not in session:
+		abort(401)	
+
+	if request.method == 'GET':
+		dbid = None
+
+		if request.args.get('entity') == 'title':
+			entitytype = 'title'
+
+			msoptions = [(ms.id, (str(ms.id))) for ms in models.manuscript.query.all()]
+			createForm = TitleForm()
+			createForm.ms_id.choices = msoptions
+
+		elif request.args.get('entity') == 'watermark':
+			entitytype = 'watermark'
+			createForm = WatermarkForm()
+
+		elif request.args.get('entity') == 'language':
+			entitytype = 'language'
+			createForm = LanguageForm()
+
+		elif request.args.get('entity') == 'line':
+			entitytype = 'line'
+			createForm = LineForm()
+
+		elif request.args.get('entity') == 'script':
+			entitytype = 'script'
+			createForm = ScriptForm()
+
+		elif request.args.get('entity') == 'ruling':
+			entitytype = 'ruling'
+			createForm = RulingForm()
+
+		elif request.args.get('entity') == 'place':
+			entitytype = 'place'
+			createForm = PlaceForm()
+
+		elif request.args.get('entity') == 'subject':
+			entitytype = 'subject'
+			createForm = SubjectForm()
+
+		return render_template('entity_edit.html', entitytype = entitytype, createForm = createForm, dbid = dbid)
+
+	else:
+		entitytype = request.args.get('entity')
+		if request.args.get('entity') == 'title':
+			newTitle = models.title(
+				title_text = request.form.get('title_text'),
+				title_type = request.form.get('title_type'),
+				ms_id = request.form.get('ms_id')
+				)
+			db.session.add(newTitle)
+			db.session.commit()
+
+		elif request.args.get('entity') == 'watermark':
+			newWMUrl = 'http://www.ksbm.oeaw.ac.at/_scripts/php/loadRepWmark.php?rep=briquet&refnr=' + request.form.get('wmid') + '&lang=fr'
+			newWM = models.watermark(
+				name = request.form.get('name'),
+				id = request.form.get('wmid'),
+				url = newWMUrl)
+			db.session.add(newWM)
+			db.session.commit()
+
+		elif request.args.get('entity') == 'language':
+			newLang = models.language(
+				name = request.form.get('lang_name'))
+			db.session.add(newLang)
+			db.session.commit()
+
+		elif request.args.get('entity') == 'line':
+			newLine = models.lines(
+				id=request.form.get('num_lines')
+				)
+			db.session.add(newLine)
+			db.session.commit()
+
+		elif request.args.get('entity') == 'script':
+			newScript = models.script(
+				name=request.form.get('script_name')
+				)
+			db.session.add(newScript)
+			db.session.commit()
+		
+		elif request.args.get('entity') == 'ruling':
+			newRule = models.ruling(
+				name=request.form.get('ruling_type')
+				)
+			db.session.add(newRule)
+			db.session.commit()	
+
+		elif request.args.get('entity') == 'place':
+			newPlace = models.place(
+				place_name=request.form.get('place_name'),
+				place_type=request.form.get('place_type'),
+				lat=request.form.get('latitude'),
+				lon=request.form.get('longitude')
+				)
+			db.session.add(newPlace)
+			db.session.commit()
+
+		elif request.args.get('entity') == 'subject':
+			newSubject = models.subject(
+				subj_name=request.form.get('subject_name'),
+				subj_type=request.form.get('subject_type')
+				)
+			db.session.add(newSubject)
+			db.session.commit()
+
+		return render_template('submitted.html', pagetitle = "New Item Submitted", doctype = entitytype)
+
+
+
+
+@app.route('/delete_entity', methods=['DELETE'])
+def delete_entity():
+	if 'username' not in session:
+		abort(401)	
+	valuemap = {'manuscript': models.manuscript, 'volume': models.volume, 'content_item': models.content_item, 
+	'person': models.person, 'watermark': models.watermark,'place': models.place, 'org': models.organization, 
+	'exdoc': models.external_doc, 'exwork': models.external_work, 'title': models.title, 'script': models.script,
+	'ruling': models.ruling, 'language': models.language, 'subject': models.subject}
+
+	focus_table = request.form.get('table')
+	ent_id = request.form.get('id')	
+
+
+	#############
 
 
 def get_info_from_db(ent_id, table):
@@ -888,13 +1168,19 @@ def get_chart_info(chartlist):
 
 	return returnlist
 
-@app.route('/deletems/<ms_id>', methods=['GET'])
+@app.route('/deletems/<ms_id>', methods=['DELETE'])
 def delete_ms(ms_id):
 	#TEST
-	focusms = models.manuscript.query.get(ms_id)
+	if 'username' not in session:
+		abort(401)
 
+	focusms = models.manuscript.query.get(ms_id)
+	print 'Deleting MS ' + str(ms_id)
 	db.session.delete(focusms)
 	db.session.commit()
+
+	return 'Deleting MS ' + str(ms_id)
+
 
 @app.route('/sendcontentsjson', methods=['GET'])
 def contents_json():
@@ -963,7 +1249,9 @@ def admin_menu():
 	if 'username' not in session:
 		return redirect(url_for('login_user', next='/admin'))
 
-	return render_template('adminmenu.html', pagetitle = 'Menu')
+	num_comments = str(len(models.comment.query.filter_by(comment_read=False).all()))
+
+	return render_template('adminmenu.html', pagetitle = 'Menu', unread_comments = num_comments)
 
 
 @app.route('/addexdoc', methods=['GET', 'POST'])
@@ -1379,6 +1667,9 @@ def edit_my_pw():
 
 @app.route('/homesettings', methods=['GET', 'POST'])
 def homepage_settings():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/homesettings'))
+
 	if request.method =='GET':
 		yescharts = json.dumps(sorted([{'id': showchart.id, 'name': showchart.title, 'order': showchart.displayorder} for showchart in models.chart.query.filter_by(display=True).order_by(models.chart.displayorder)], key=lambda retrievechart: retrievechart['order']))
 		nocharts = json.dumps(sorted([{'id': showchart.id, 'name': showchart.title, 'order': showchart.displayorder} for showchart in models.chart.query.filter_by(display=False).order_by(models.chart.displayorder)], key=lambda retrievechart: retrievechart['order']))
@@ -1401,6 +1692,9 @@ def homepage_settings():
 
 @app.route('/editchart<chartid>', methods=['GET', 'POST'])
 def edit_chart(chartid):
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/homesettings'))
+
 	chart_info = ChartEditForm()
 
 	if request.method == 'GET':
@@ -1434,6 +1728,31 @@ def edit_chart(chartid):
 		db.session.commit()
 
 		return render_template('submitted.html', pagetitle='Changes Submitted', doctype='Changes to Chart Info ')
+
+@app.route('/edithometext', methods=['GET', 'POST'])
+def edit_home_text():
+	if 'username' not in session:
+		return redirect(url_for('login_user', next='/edithometext'))
+	
+	if request.method == 'GET':
+		hometext = HometextForm()
+		return render_template('hometext_edit.html', pagetitle='Change Home Text', homeform=hometext)
+	
+	else:
+		newtext = models.hometext.query.first()
+
+		if newtext == None:
+			newtext = models.hometext(
+				displaytext=request.form.get('text_content')
+				)
+		else:
+			newtext.displaytext = request.form.get('text_content')
+
+		db.session.add(newtext)
+		db.session.commit()
+
+		return render_template('submitted.html', pagetitle='Homepage Text Updated', doctype='New Homepage Text ')
+	
 
 @app.errorhandler(404)
 def show_error(error):

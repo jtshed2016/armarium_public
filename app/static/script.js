@@ -19,8 +19,55 @@ window.onload = function() {
       roleselectors[i].addEventListener('change', function() { includeRels[this.name] = this.checked });
       roleselectors[i].addEventListener('change', reRenderPeopleChart);
     }
+  } else if ((window.location.pathname.split("?")[0] === '/editms') && (document.getElementById("deletebutton") !== null)) {
+    deleteButton = document.getElementById("deletebutton");
+    deleteButton.addEventListener('click', warnAndDelete);
+  } else if (window.location.pathname === '/view_feedback') {
+    markread = document.querySelectorAll('.readbutton');
+    for (i=0; i< markread.length; i++) {
+      markread[i].addEventListener("click", markAsRead);
+    }
+    deletebuttons = document.querySelectorAll('.delbutton');
+    for (i=0; i< deletebuttons.length; i++) {
+      deletebuttons[i].addEventListener("click", deleteComment);
+    }
   }
+}
 
+function warnAndDelete() {
+  ms_id = document.getElementById('ms_id').value;
+  deleteChoice = confirm("This will delete this item from the database.  Continue?")
+  if (deleteChoice === true) {
+    var deleteURL = '/deletems/' + ms_id.toString() 
+    deleteReq = new XMLHttpRequest();
+    deleteReq.open("DELETE", deleteURL, true);
+    deleteReq.send()
+    window.location.replace("/editms")
+  } 
+}
+
+function markAsRead() {
+  markReq = new XMLHttpRequest();
+  markURL = '/feedback';
+  markReq.open("PUT", markURL, true);
+  markReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  markReq.send('id=' + this.value.toString());
+  marker = document.getElementById('readMarker' + this.value.toString());
+  marker.innerHTML = 'Read';
+}
+
+//change this as necessary, add class to differentiate button when adding listeners to feedback view page
+function deleteComment() {
+  deleteRequest = new XMLHttpRequest();
+  deleteURL = '/feedback';
+  deleteRequest.open("DELETE", deleteURL, true);
+  deleteRequest.onload = function() {
+    console.log(deleteRequest.status);
+    }
+  deleteRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  deleteRequest.send('id=' + this.value.toString());
+  marker = document.getElementById('readMarker' + this.value.toString());
+  marker.innerHTML = 'Deleted';
 }
 
 function reRenderPeopleChart() {
@@ -36,8 +83,9 @@ function reRenderPeopleChart() {
     mainsvg.removeChild(svgRects[0]);
   }  
 
-  renderHomeChart(peoplechartInfo['chartName'], '#' + peoplechartInfo['visDiv'], '#' + peoplechartInfo['toolTipDiv'], peoplechartInfo['x_axis_id'], peoplechartInfo['x_axis_label'], peoplechartInfo['y_axis_label'], sourceData, peoplechartInfo['urlpath'], peoplechartInfo['maxValues']);
-
+  console.log('chartname', peoplechartInfo['chartName']);
+  console.log('div', peoplechartInfo['visDiv']);
+  renderHomeChart(peoplechartInfo['chartName'], '#' + peoplechartInfo['visDiv'], '#' + peoplechartInfo['toolTipDiv'], peoplechartInfo['x_axis_id'], peoplechartInfo['x_axis_label'], peoplechartInfo['y_axis_label'], peoplesourceData, peoplechartInfo['urlpath'], peoplechartInfo['maxValues']);
 
 }
 

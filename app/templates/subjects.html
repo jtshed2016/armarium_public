@@ -50,8 +50,8 @@
 
 <h4>Chronological Terms</h4>
 <table>
-{% for chronterm in chronsubj %}
-<tr><td><a href="{{ url_for('ms_by_subject', subjid=chronterm.id) }}">{{chronterm.subj_name}}</a></td></tr>
+{% for chronsubj in chronterm %}
+<tr><td><a href="{{ url_for('ms_by_subject', subjid=chronsubj.id) }}">{{chronsubj.subj_name}}</a></td></tr>
 {% endfor %}
 </table>
 

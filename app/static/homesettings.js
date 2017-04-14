@@ -159,9 +159,11 @@ function postdata() {
   var url = '';
   chartsupdate.open("POST", url, true);
   chartsupdate.setRequestHeader("Content-type", "application/json");
+  /*
   chartsupdate.onload = function() {
   	console.log(chartsupdate.status);
   }
+  */
   chartsupdate.send(JSON.stringify(returnlist));
   mainDiv = document.getElementById("maindiv");
   allContent = mainDiv.childNodes;

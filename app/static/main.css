@@ -136,6 +136,9 @@ nav a {
 	height: 400px;
 }
 
+#welcometext {
+	text-align: center;
+}
 
 /*immediate div for map on home page*/
 #collectionmap {
@@ -193,13 +196,12 @@ footer {
 	margin: .75em;
 	clear: both;
 	display: inline-block;
+	text-align: center;
 }
+
 footer *{
 	display: inline-block;
 	margin: .5em;
-}
-
-footer p {
 	text-align: center;
 }
 
@@ -226,10 +228,11 @@ table, th, td {
 #pagelink {
 	text-align: center;
 }
-
+/*
 #colophon {
 	text-align: center;
 }
+*/
 
 th *{
 	font-weight: bold;

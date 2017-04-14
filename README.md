@@ -79,6 +79,11 @@ Open crontab:
 Add the following line, save, and quit (this will run daily at 6:00 AM; modify as desired):
 `0 6 * * * /var/www/armarium_public/dbpudate.py`
 
+In order for administrators to be able to update the database, the ownership of the database and the directory where it is located (`/var/www/armarium_public/app.db`, `/var/www/armarium_public`) must be switched to the user under which the application runs (`www-data`):
+`chown www-data /var/www/armarium_public`
+`chown www-data /var/www/armarium_public/app.db`
+
+
 At this point, the application should be functioning and available from the root of the domain.  
 
 ## Application Configuration and Maintenance
